@@ -7,89 +7,122 @@
 <meta name="mobile-web-app-capable" content="yes">
 <title>Inituh</title>
 <style>
-:root{--bg:#f6f7f9;--card:#fff;--tx:#14181f;--mu:#6b7280;--ac:#0f766e;--on:#fff;--bd:#e5e7eb;--me:#d1f2ec;--er:#b91c1c;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
-@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e1116;--card:#171b22;--tx:#e8eaed;--mu:#9aa3af;--ac:#2dd4bf;--on:#06201c;--bd:#262c36;--me:#12403a;--er:#f87171;color-scheme:dark}}
-:root[data-theme="dark"]{--bg:#0e1116;--card:#171b22;--tx:#e8eaed;--mu:#9aa3af;--ac:#2dd4bf;--on:#06201c;--bd:#262c36;--me:#12403a;--er:#f87171;color-scheme:dark}
-*{box-sizing:border-box}html,body{height:100%;margin:0}
+:root{--bg:#eef1f4;--card:#fff;--tx:#111b21;--mu:#667781;--ac:#0f766e;--ac2:#14a394;--on:#fff;--bd:#e3e7ea;--me:#d9fdd3;--in:#fff;--er:#b91c1c;--wall:#efeae2;--dot:rgba(0,0,0,.045);--sh:0 1px 1px rgba(11,20,26,.13);color-scheme:light}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0b141a;--card:#111b21;--tx:#e9edef;--mu:#8696a0;--ac:#00a884;--ac2:#06cf9c;--on:#06201c;--bd:#222d34;--me:#005c4b;--in:#202c33;--er:#f87171;--wall:#0b141a;--dot:rgba(255,255,255,.035);color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0b141a;--card:#111b21;--tx:#e9edef;--mu:#8696a0;--ac:#00a884;--ac2:#06cf9c;--on:#06201c;--bd:#222d34;--me:#005c4b;--in:#202c33;--er:#f87171;--wall:#0b141a;--dot:rgba(255,255,255,.035);color-scheme:dark}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}html,body{height:100%;margin:0;overflow:hidden}
 body{background:var(--bg);color:var(--tx);font:16px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
-.scr{display:flex;flex-direction:column;height:100%;max-width:640px;margin:0 auto;background:var(--bg)}
-.scr[hidden],[hidden]{display:none!important}
-header{display:flex;align-items:center;gap:8px;padding:12px 14px;background:var(--card);border-bottom:1px solid var(--bd);font-weight:600}
-header .sp{flex:1;min-width:0}
-#main,#msgs{flex:1;overflow-y:auto;padding:12px}
-button{font:inherit;cursor:pointer;border:0;border-radius:10px;padding:10px 14px;background:var(--ac);color:var(--on)}
-button:disabled{opacity:.5;cursor:default}
-button.g{background:transparent;color:var(--tx);border:1px solid var(--bd)}
+.scr{display:flex;flex-direction:column;height:100%;max-width:560px;margin:0 auto;background:var(--card);position:relative;padding-top:env(safe-area-inset-top,0px)}
+@media(min-width:600px){.scr{box-shadow:0 0 0 1px var(--bd),0 8px 30px rgba(0,0,0,.12)}}
+[hidden]{display:none!important}
+svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+button{font:inherit;cursor:pointer;border:0;border-radius:10px;padding:10px 16px;background:var(--ac);color:var(--on);font-weight:600}
+button:active{filter:brightness(.92)}button:disabled{opacity:.5}
+button.g{background:transparent;color:var(--tx);border:1px solid var(--bd);font-weight:500}
 button.d{background:transparent;color:var(--er);border:1px solid var(--bd)}
-button.s{padding:6px 10px;font-size:14px}
-input{font:inherit;width:100%;padding:11px 12px;border:1px solid var(--bd);border-radius:10px;background:var(--card);color:var(--tx)}
-.card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:12px;margin-bottom:10px}
-.row{display:flex;align-items:center;gap:10px}.row .sp{flex:1;min-width:0}
-.av{width:40px;height:40px;border-radius:50%;background:var(--ac);color:var(--on);display:grid;place-items:center;font-weight:700;flex:none}
+button.s{padding:7px 12px;font-size:14px}
+button.ic{background:transparent;color:inherit;padding:8px;border-radius:50%;display:grid;place-items:center;font-weight:400}
+button.ic:active{background:rgba(255,255,255,.18)}
+input{font:inherit;width:100%;padding:12px 14px;border:1px solid var(--bd);border-radius:12px;background:var(--card);color:var(--tx);outline:none}
+input:focus{border-color:var(--ac)}
+.top{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--ac);color:#fff;min-height:58px}
+.top h1{margin:0;font-size:20px;flex:1}
+.top .sp{flex:1;min-width:0;cursor:default}
+.top .nm{font-weight:600;line-height:1.2}.top .st{font-size:12px;opacity:.85}
+.av{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;color:#fff;font-weight:700;flex:none;font-size:18px}
+.av.sm{width:38px;height:38px;font-size:16px}.av.xl{width:84px;height:84px;font-size:36px;margin:0 auto}
+#main{flex:1;overflow-y:auto;background:var(--card)}
+.pad{padding:12px}
+.item{display:flex;align-items:center;gap:12px;padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--bd)}
+.item:active{background:var(--bg)}
+.item .sp{flex:1;min-width:0}.item .l1{display:flex;justify-content:space-between;gap:8px}
 .mu{color:var(--mu);font-size:14px}.ell{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.bd{background:var(--ac);color:var(--on);border-radius:99px;padding:1px 7px;font-size:12px;font-weight:700}
-nav{display:flex;background:var(--card);border-top:1px solid var(--bd)}
-nav button{flex:1;background:transparent;color:var(--mu);border-radius:0;padding:14px 0}
-nav button.on{color:var(--ac);font-weight:700}
-.b{max-width:78%;padding:8px 12px;border-radius:14px;margin:4px 0;background:var(--card);border:1px solid var(--bd);word-wrap:break-word;white-space:pre-wrap}
-.b.me{margin-left:auto;background:var(--me);border-color:transparent}
-.b small{display:block;color:var(--mu);font-size:11px;text-align:right}
-.b a{color:var(--ac);font-weight:600}
-.b img{display:block;max-width:min(240px,60vw);max-height:300px;border-radius:10px}
-.bar{display:flex;gap:8px;padding:10px;background:var(--card);border-top:1px solid var(--bd)}
-.bar .at{padding:10px 12px;flex:none}
-.code{font:700 28px/1 ui-monospace,Menlo,monospace;letter-spacing:3px;text-align:center;margin:10px 0}
+.bd{background:var(--ac2);color:var(--on);border-radius:99px;min-width:20px;height:20px;padding:0 6px;font-size:12px;font-weight:700;display:inline-grid;place-items:center}
+.t{font-size:12px;color:var(--mu)}.t.un{color:var(--ac2);font-weight:600}
+.empty{text-align:center;color:var(--mu);padding:48px 24px}
+.empty svg{width:56px;height:56px;opacity:.4;margin-bottom:8px}
+nav{display:flex;background:var(--card);border-top:1px solid var(--bd);padding-bottom:env(safe-area-inset-bottom,0px)}
+nav button{flex:1;background:transparent;color:var(--mu);border-radius:0;padding:9px 0 7px;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:12px;font-weight:500;position:relative}
+nav button.on{color:var(--ac)}
+nav .bd{position:absolute;top:3px;left:calc(50% + 6px)}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:14px;margin-bottom:12px}
+.row{display:flex;align-items:center;gap:10px}.row .sp{flex:1;min-width:0}
+h3{margin:16px 0 6px;font-size:13px;color:var(--ac);text-transform:uppercase;letter-spacing:.5px;padding:0 14px}
+.code{font:700 28px/1 ui-monospace,Menlo,monospace;letter-spacing:4px;text-align:center;margin:10px 0;color:var(--ac)}
 #qr{display:grid;place-items:center;margin:8px 0}#qr>div{background:#fff;padding:8px;border-radius:10px}
-#toast{position:fixed;left:50%;bottom:80px;transform:translateX(-50%);background:var(--tx);color:var(--bg);padding:10px 16px;border-radius:10px;max-width:90%;z-index:30}
-h3{margin:14px 0 8px;font-size:15px;color:var(--mu)}
-.f{display:grid;gap:10px;padding:20px}
-#call{position:fixed;inset:0;z-index:20;max-width:none;margin:0;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+/* jendela chat */
+#msgs{flex:1;overflow-y:auto;padding:10px 12px;background-color:var(--wall);background-image:radial-gradient(var(--dot) 1.5px,transparent 1.5px);background-size:22px 22px;display:flex;flex-direction:column}
+.day{align-self:center;background:var(--card);color:var(--mu);font-size:12px;padding:4px 12px;border-radius:8px;margin:10px 0;box-shadow:var(--sh)}
+.b{max-width:80%;padding:6px 9px 4px;border-radius:9px;margin:2px 0;background:var(--in);word-wrap:break-word;overflow-wrap:anywhere;white-space:pre-wrap;box-shadow:var(--sh);align-self:flex-start;position:relative}
+.b.me{align-self:flex-end;background:var(--me)}
+.b.first{border-top-left-radius:0;margin-top:6px}.b.me.first{border-top-left-radius:9px;border-top-right-radius:0}
+.b.first:not(.me)::before{content:"";position:absolute;top:0;left:-7px;border:7px solid transparent;border-top-color:var(--in);border-right-color:var(--in);border-left:0;border-bottom:0}
+.b.me.first::before{content:"";position:absolute;top:0;right:-7px;border:7px solid transparent;border-top-color:var(--me);border-left-color:var(--me);border-right:0;border-bottom:0}
+.b .m{float:right;margin:6px 0 0 10px;font-size:11px;color:var(--mu);white-space:nowrap;line-height:1}
+.b .m .ck{color:var(--mu)}.b .m .ck.r{color:#53bdeb}
+.b a{color:var(--ac);font-weight:600}
+.b img{display:block;max-width:min(260px,64vw);max-height:320px;border-radius:7px;margin-bottom:2px}
+.fl{display:flex;align-items:center;gap:10px;min-width:200px;padding:6px;background:rgba(0,0,0,.05);border-radius:8px;margin-bottom:4px}
+.fl .fi{width:38px;height:38px;border-radius:8px;background:var(--ac);color:var(--on);display:grid;place-items:center;font-size:10px;font-weight:700;flex:none}
+.cl{display:flex;align-items:center;gap:10px;min-width:210px}
+.cl .ci{width:42px;height:42px;border-radius:50%;background:var(--ac);color:var(--on);display:grid;place-items:center;flex:none}
+.bar{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg);padding-bottom:calc(8px + env(safe-area-inset-bottom,0px))}
+.bar input{border-radius:24px;border-color:transparent;background:var(--card)}
+.bar .at{background:transparent;color:var(--mu);padding:8px}
+.bar .sd{width:46px;height:46px;padding:0;border-radius:50%;display:grid;place-items:center;flex:none}
+#toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:#202c33;color:#fff;padding:10px 16px;border-radius:10px;max-width:90%;z-index:30;box-shadow:0 4px 14px rgba(0,0,0,.3)}
+.f{display:grid;gap:12px;padding:24px}
+.logo{width:72px;height:72px;border-radius:20px;background:var(--ac);color:var(--on);display:grid;place-items:center;margin:0 auto}
+.logo svg{width:40px;height:40px;fill:currentColor;stroke:none}
+#call{position:fixed;inset:0;z-index:20;max-width:none;margin:0;background:#000}
 #cf{flex:1;border:0;width:100%;background:#000}
 </style>
 </head>
 <body>
 
 <div id="auth" class="scr" hidden>
-  <div class="f" style="margin-top:8vh">
-    <h1 style="margin:0">Inituh</h1>
-    <div class="mu" id="am">Masuk untuk mulai mengobrol.</div>
+  <div class="f" style="margin-top:7vh">
+    <div class="logo"><svg viewBox="0 0 24 24"><path d="M4 4h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9l-5 4v-4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/></svg></div>
+    <h1 style="margin:0;text-align:center">Inituh</h1>
+    <div class="mu" id="am" style="text-align:center">Masuk untuk mulai mengobrol.</div>
     <input id="nm" placeholder="Nama tampilan" hidden>
     <input id="em" type="email" placeholder="Email" autocomplete="email">
-    <input id="pw" type="password" placeholder="Kata sandi (min. 6 karakter)" autocomplete="current-password">
+    <input id="pw" type="password" placeholder="Kata sandi (min. 6 karakter)" autocomplete="current-password" onkeydown="if(event.key==='Enter')auth()">
     <button id="ab" onclick="auth()">Masuk</button>
     <button class="g" id="at" onclick="mode()">Belum punya akun? Daftar</button>
   </div>
 </div>
 
 <div id="home" class="scr" hidden>
-  <header>Inituh</header>
+  <div class="top"><h1 id="ht">Inituh</h1></div>
   <div id="main"></div>
   <nav id="tabs"></nav>
 </div>
 
 <div id="chat" class="scr" hidden>
-  <header>
-    <button class="g s" onclick="back()" aria-label="Kembali">←</button>
-    <span class="sp ell" id="ct"></span>
-    <button class="g s" onclick="startCall()" aria-label="Panggilan" title="Panggilan video/suara">📞</button>
-    <button class="g s" onclick="report()" aria-label="Laporkan" title="Laporkan">⚑</button>
-    <button class="d s" onclick="block()" aria-label="Blokir" title="Blokir">⛔</button>
-  </header>
+  <div class="top">
+    <button class="ic" onclick="back()" aria-label="Kembali"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></button>
+    <div class="av sm" id="cav"></div>
+    <div class="sp"><div class="nm ell" id="ct"></div><div class="st">Teman</div></div>
+    <button class="ic" onclick="startCall()" aria-label="Panggilan"><svg viewBox="0 0 24 24"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/></svg></button>
+    <button class="ic" onclick="report()" aria-label="Laporkan"><svg viewBox="0 0 24 24"><path d="M4 22V4m0 0h13l-2 4 2 4H4"/></svg></button>
+    <button class="ic" onclick="block()" aria-label="Blokir"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M4.9 4.9l14.2 14.2"/></svg></button>
+  </div>
   <div id="msgs"></div>
   <div class="bar">
-    <button class="g at" id="atb" onclick="$('#fi').click()" aria-label="Lampirkan foto atau dokumen" title="Foto / dokumen">📎</button>
+    <button class="ic at" id="atb" onclick="document.getElementById('fi').click()" aria-label="Lampirkan"><svg viewBox="0 0 24 24"><path d="M21.4 11.1l-9.2 9.2a6 6 0 0 1-8.5-8.5l9.2-9.2a4 4 0 0 1 5.7 5.7l-9.2 9.2a2 2 0 0 1-2.8-2.8l8.5-8.5"/></svg></button>
     <input id="fi" type="file" hidden accept="image/jpeg,image/png,image/webp,image/gif,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv" onchange="pickFile(this)">
-    <input id="mi" placeholder="Tulis pesan…" maxlength="2000" onkeydown="if(event.key==='Enter')send()">
-    <button onclick="send()">Kirim</button>
+    <input id="mi" placeholder="Ketik pesan" maxlength="2000" autocomplete="off" onkeydown="if(event.key==='Enter')send()">
+    <button class="sd" onclick="send()" aria-label="Kirim"><svg viewBox="0 0 24 24" style="stroke:none;fill:currentColor"><path d="M2.5 21.5l19-9.5-19-9.5v7.4l13 2.1-13 2.1z"/></svg></button>
   </div>
 </div>
 
 <div id="call" class="scr" hidden>
-  <header>
-    <button class="d s" onclick="endCall()">Tutup</button>
-    <span class="sp ell" id="cn">Panggilan</span>
-    <button class="g s" id="ctab">Buka di tab</button>
-  </header>
+  <div class="top">
+    <button class="ic" onclick="endCall()" aria-label="Tutup"><svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    <div class="sp nm ell" id="cn">Panggilan</div>
+    <button class="g s" id="ctab" style="color:#fff;border-color:rgba(255,255,255,.5)">Buka di tab</button>
+  </div>
   <iframe id="cf" title="Panggilan Jitsi" allow="camera; microphone; display-capture; autoplay; fullscreen; clipboard-write"></iframe>
 </div>
 
@@ -106,12 +139,10 @@ const sb = supabase.createClient(
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 let me, prof, tab = "chat", peer = null, F = [], P = {}, M = [], found = null, ch, signup = false, uploading = false;
-const U = {};   // cache signed URL lampiran: path -> {url, exp}
+const U = {};
 
-/* ---------- Konfigurasi lampiran & panggilan ---------- */
 const BUCKET = "attachments";
-const IMG_MAX = 5 * 1024 * 1024;    // 5 MB (foto, setelah dikompres)
-const DOC_MAX = 10 * 1024 * 1024;   // 10 MB (dokumen)
+const IMG_MAX = 5 * 1024 * 1024, DOC_MAX = 10 * 1024 * 1024;
 const TYPES = {
   jpg:"image/jpeg", jpeg:"image/jpeg", png:"image/png", webp:"image/webp", gif:"image/gif",
   pdf:"application/pdf", doc:"application/msword",
@@ -125,14 +156,36 @@ const TYPES = {
 const JIT = "https://meet.jit.si/Inituh-";
 const CALL_RE = /^https:\/\/meet\.jit\.si\/Inituh-[0-9a-f]{16}$/;
 
+/* ---------- Util ---------- */
 function toast(t){ const e = $("#toast"); e.textContent = t; e.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => e.hidden = true, 3500); }
 function show(id){ ["auth","home","chat"].forEach(x => $("#"+x).hidden = x !== id); }
 const nm = id => P[id]?.display_name || "Pengguna";
+const COL = ["#0f766e","#6d28d9","#be185d","#b45309","#1d4ed8","#047857","#9333ea","#c2410c"];
+const colr = id => COL[[...String(id)].reduce((a, c) => a + c.charCodeAt(0), 0) % COL.length];
 const ini = id => esc((nm(id)[0] || "?").toUpperCase());
+const avt = (id, cls = "") => `<div class="av ${cls}" style="background:${colr(id)}">${ini(id)}</div>`;
 const hm = t => new Date(t).toLocaleTimeString("id-ID", {hour:"2-digit", minute:"2-digit"});
+const dkey = t => new Date(t).toDateString();
+function dlabel(t){
+  const d = new Date(t), n = new Date(), y = new Date(n - 864e5);
+  if(d.toDateString() === n.toDateString()) return "Hari ini";
+  if(d.toDateString() === y.toDateString()) return "Kemarin";
+  return d.toLocaleDateString("id-ID", {day:"numeric", month:"long", year:"numeric"});
+}
+function ltime(t){
+  const d = new Date(t), n = new Date();
+  if(d.toDateString() === n.toDateString()) return hm(t);
+  if(d.toDateString() === new Date(n - 864e5).toDateString()) return "Kemarin";
+  return d.toLocaleDateString("id-ID", {day:"2-digit", month:"2-digit", year:"2-digit"});
+}
 const isImg = t => (t || "").startsWith("image/");
 const sz = n => n >= 1048576 ? (n / 1048576).toFixed(1) + " MB" : Math.max(1, Math.round(n / 1024)) + " KB";
 const prev = x => x.kind === "file" ? (isImg(x.file_type) ? "📷 Foto" : "📎 " + (x.file_name || "Dokumen")) : x.kind === "call" ? "📞 Panggilan" : x.body;
+const IC = {
+  chat:'<svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H8l-5 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>',
+  teman:'<svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8"/></svg>',
+  prof:'<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1"/></svg>'
+};
 
 /* ---------- Notifikasi ---------- */
 let actx;
@@ -155,7 +208,7 @@ async function notif(title, body, tag){
 }
 function notifState(){
   if(!("Notification" in window)) return "Browser ini tidak mendukung notifikasi.";
-  if(Notification.permission === "granted") return "Aktif. Pesan baru akan muncul saat aplikasi terbuka atau di latar belakang.";
+  if(Notification.permission === "granted") return "Aktif.";
   if(Notification.permission === "denied") return "Diblokir. Izinkan lewat pengaturan situs di browser.";
   return "Belum aktif.";
 }
@@ -168,11 +221,9 @@ async function aktifNotif(){
 function onMsg(p){
   const m = p.new;
   if(!m || !me || m.sender === me.id) return;
-  const viewing = peer === m.sender && !document.hidden;
-  if(viewing) return;
+  if(peer === m.sender && !document.hidden) return;
   const who = nm(m.sender), text = prev(m);
-  beep();
-  navigator.vibrate?.(100);
+  beep(); navigator.vibrate?.(100);
   if(document.hidden) notif(m.kind === "call" ? "Panggilan dari " + who : who, text, "m-" + m.sender);
   else toast(who + ": " + text);
 }
@@ -201,14 +252,23 @@ sb.auth.onAuthStateChange((_e, s) => {
   else { me = null; prof = null; peer = null; document.title = APP; if(ch) sb.removeChannel(ch); show("auth"); }
 });
 
+async function loadProf(){
+  for(let i = 0; i < 3; i++){
+    const {data} = await sb.from("profiles").select("*").eq("id", me.id).maybeSingle();
+    if(data) return data;
+    await new Promise(r => setTimeout(r, 600));
+  }
+  toast("Profil belum termuat. Coba muat ulang halaman.");
+  return {id:me.id, code:"", username:null, display_name:me.user_metadata?.full_name || (me.email || "Saya").split("@")[0]};
+}
 async function boot(){
-  const {data} = await sb.from("profiles").select("*").eq("id", me.id).single();
-  prof = data; P[me.id] = prof; show("home");
+  prof = await loadProf(); P[me.id] = prof; show("home");
   ch = sb.channel("rt")
     .on("postgres_changes", {event:"*", schema:"public", table:"messages"}, refresh)
     .on("postgres_changes", {event:"INSERT", schema:"public", table:"messages", filter:"recipient=eq." + me.id}, onMsg)
     .on("postgres_changes", {event:"*", schema:"public", table:"friendships"}, refresh)
     .subscribe();
+  draw();
   refresh();
 }
 
@@ -223,23 +283,25 @@ async function sign(){
 }
 async function refresh(){
   if(!me) return;
-  const [f, m] = await Promise.all([
-    sb.from("friendships").select("*"),
-    sb.from("messages").select("*").order("created_at", {ascending:false}).limit(500)
-  ]);
-  F = f.data || []; M = m.data || [];
-  const ids = [...new Set(F.flatMap(x => [x.requester, x.addressee]))].filter(i => i !== me.id);
-  if(ids.length){
-    const {data} = await sb.from("profiles").select("id,code,username,display_name").in("id", ids);
-    (data || []).forEach(p => P[p.id] = p);
-  }
-  P[me.id] = prof;
-  if(peer && M.some(x => x.sender === peer && x.recipient === me.id && !x.read_at)){
-    sb.from("messages").update({read_at:new Date().toISOString()}).eq("sender", peer).eq("recipient", me.id).is("read_at", null).then(() => {});
-  }
-  const un = M.filter(x => x.recipient === me.id && !x.read_at && x.sender !== peer).length;
-  document.title = (un ? "(" + un + ") " : "") + APP;
-  await sign();
+  try{
+    const [f, m] = await Promise.all([
+      sb.from("friendships").select("*"),
+      sb.from("messages").select("*").order("created_at", {ascending:false}).limit(500)
+    ]);
+    F = f.data || []; M = m.data || [];
+    const ids = [...new Set(F.flatMap(x => [x.requester, x.addressee]))].filter(i => i !== me.id);
+    if(ids.length){
+      const {data} = await sb.from("profiles").select("id,code,username,display_name").in("id", ids);
+      (data || []).forEach(p => P[p.id] = p);
+    }
+    P[me.id] = prof;
+    if(peer && M.some(x => x.sender === peer && x.recipient === me.id && !x.read_at)){
+      sb.from("messages").update({read_at:new Date().toISOString()}).eq("sender", peer).eq("recipient", me.id).is("read_at", null).then(() => {});
+    }
+    const un = M.filter(x => x.recipient === me.id && !x.read_at && x.sender !== peer).length;
+    document.title = (un ? "(" + un + ") " : "") + APP;
+    await sign();
+  }catch(e){ console.error(e); }
   draw();
 }
 const other = x => x.requester === me.id ? x.addressee : x.requester;
@@ -249,14 +311,26 @@ const out = () => F.filter(x => x.status === "pending" && x.requester === me.id)
 
 /* ---------- Tampilan ---------- */
 function go(t){ tab = t; draw(); }
+function drawTabs(){
+  const n = inc().length;
+  $("#tabs").innerHTML = [["chat","Chat"],["teman","Teman"],["prof","Profil"]].map(([k, l]) =>
+    `<button class="${tab === k ? "on" : ""}" data-t="${k}">${IC[k]}<span>${l}</span>${k === "teman" && n ? `<span class="bd">${n}</span>` : ""}</button>`).join("");
+  $("#ht").textContent = {chat:"Inituh", teman:"Teman", prof:"Profil"}[tab];
+}
+$("#tabs").addEventListener("click", e => { const b = e.target.closest("button[data-t]"); if(b) go(b.dataset.t); });
 function draw(){
+  if(!me || !prof) return;
   if(peer) return fillMsgs();
   const q = $("#q")?.value || "";
-  $("#main").innerHTML = tab === "chat" ? vChat() : tab === "teman" ? vTeman() : vProf();
-  $("#tabs").innerHTML = [["chat","Chat"],["teman","Teman"],["prof","Profil"]].map(([k, l]) =>
-    `<button class="${tab === k ? "on" : ""}" onclick="go('${k}')">${l}${k === "teman" && inc().length ? ` <span class="bd">${inc().length}</span>` : ""}</button>`).join("");
+  let html;
+  try{ html = tab === "chat" ? vChat() : tab === "teman" ? vTeman() : vProf(); }
+  catch(e){ console.error(e); html = `<div class="empty">Terjadi kesalahan menampilkan halaman ini.</div>`; }
+  $("#main").innerHTML = html;
+  drawTabs();
   if(tab === "teman" && $("#q")) $("#q").value = q;
-  if(tab === "prof") new QRCode($("#qr"), {text: prof.code, width: 150, height: 150});
+  if(tab === "prof" && prof.code){
+    try{ new QRCode($("#qr"), {text: prof.code, width: 150, height: 150}); }catch(e){ $("#qr").textContent = ""; }
+  }
 }
 function vChat(){
   const list = friends().map(id => {
@@ -264,36 +338,38 @@ function vChat(){
     const un = M.filter(x => x.sender === id && x.recipient === me.id && !x.read_at).length;
     return {id, last, un};
   }).sort((a, b) => (b.last?.created_at || "").localeCompare(a.last?.created_at || ""));
-  if(!list.length) return `<div class="card mu">Belum ada teman. Buka tab Teman, lalu masukkan kode atau username temanmu.</div>`;
+  if(!list.length) return `<div class="empty">${IC.chat}<div><b>Belum ada obrolan</b></div><div class="mu">Buka tab Teman, lalu masukkan kode atau username temanmu.</div></div>`;
   return list.map(({id, last, un}) => `
-    <div class="card row" onclick="open1('${id}')" style="cursor:pointer">
-      <div class="av">${ini(id)}</div>
-      <div class="sp"><div class="ell"><b>${esc(nm(id))}</b></div>
-        <div class="mu ell">${last ? esc(prev(last)) : "Mulai obrolan"}</div></div>
-      ${un ? `<span class="bd">${un}</span>` : ""}
+    <div class="item" onclick="open1('${id}')">
+      ${avt(id)}
+      <div class="sp"><div class="l1"><b class="ell">${esc(nm(id))}</b><span class="t ${un ? "un" : ""}">${last ? ltime(last.created_at) : ""}</span></div>
+        <div class="l1"><span class="mu ell">${last ? (last.sender === me.id ? "Kamu: " : "") + esc(prev(last)) : "Mulai obrolan"}</span>${un ? `<span class="bd">${un}</span>` : ""}</div></div>
     </div>`).join("");
 }
 function vTeman(){
-  let h = `<div class="card"><div class="mu" style="margin-bottom:8px">Cari teman dengan kode atau username (harus persis).</div>
+  let h = `<div class="pad"><div class="card"><div class="mu" style="margin-bottom:8px">Cari teman dengan kode atau username (harus persis).</div>
     <div class="row"><input id="q" placeholder="Contoh: K7M3P9XQ" onkeydown="if(event.key==='Enter')cari()"><button onclick="cari()">Cari</button></div>`;
-  if(found === 0) h += `<div class="mu" style="margin-top:8px">Tidak ditemukan.</div>`;
-  else if(found) h += `<div class="row" style="margin-top:10px"><div class="av">${esc((found.display_name[0] || "?").toUpperCase())}</div>
+  if(found === 0) h += `<div class="mu" style="margin-top:10px">Tidak ditemukan.</div>`;
+  else if(found) h += `<div class="row" style="margin-top:12px"><div class="av" style="background:${colr(found.id)}">${esc((found.display_name?.[0] || "?").toUpperCase())}</div>
     <div class="sp"><b>${esc(found.display_name)}</b><div class="mu">${esc(found.username || found.code)}</div></div>
     <button class="s" onclick="minta()">Tambah</button></div>`;
-  h += `</div>`;
+  h += `</div></div>`;
   if(inc().length) h += `<h3>Permintaan masuk</h3>` + inc().map(x => `
-    <div class="card row"><div class="av">${ini(x.requester)}</div><div class="sp"><b>${esc(nm(x.requester))}</b></div>
+    <div class="item" style="cursor:default">${avt(x.requester)}<div class="sp"><b>${esc(nm(x.requester))}</b></div>
     <button class="s" onclick="jawab('${x.id}',true)">Terima</button><button class="g s" onclick="jawab('${x.id}',false)">Tolak</button></div>`).join("");
   if(out().length) h += `<h3>Menunggu persetujuan</h3>` + out().map(x => `
-    <div class="card row"><div class="av">${ini(x.addressee)}</div><div class="sp"><b>${esc(nm(x.addressee))}</b></div>
+    <div class="item" style="cursor:default">${avt(x.addressee)}<div class="sp"><b>${esc(nm(x.addressee))}</b></div>
     <button class="g s" onclick="jawab('${x.id}',false)">Batal</button></div>`).join("");
   return h;
 }
 function vProf(){
   const granted = "Notification" in window && Notification.permission === "granted";
-  return `<div class="card"><div class="mu" style="text-align:center">Kode kamu (bagikan ke teman)</div>
-    <div class="code">${esc(prof.code)}</div><div id="qr"></div>
-    <div class="row" style="justify-content:center"><button class="g s" onclick="salin()">Salin kode</button></div></div>
+  return `<div class="pad">
+    <div class="card" style="text-align:center">${avt(me.id, "xl")}
+      <div style="font-weight:700;font-size:18px;margin-top:10px">${esc(prof.display_name)}</div>
+      ${prof.code ? `<div class="mu" style="margin-top:12px">Kode kamu (bagikan ke teman)</div>
+      <div class="code">${esc(prof.code)}</div><div id="qr"></div>
+      <button class="g s" onclick="salin()">Salin kode</button>` : `<div class="mu" style="margin-top:8px">Kode belum tersedia.</div>`}</div>
     <div class="card"><div class="mu" style="margin-bottom:6px">Nama tampilan</div>
     <div class="row"><input id="dn" value="${esc(prof.display_name)}" maxlength="40"><button class="s" onclick="simpanNama()">Simpan</button></div></div>
     <div class="card"><div class="mu" style="margin-bottom:6px">Username (opsional, 4-20 karakter: huruf kecil, angka, _)</div>
@@ -301,8 +377,8 @@ function vProf(){
     <div class="mu" style="margin-top:6px">Username hanya bisa diganti sekali setiap 30 hari.</div></div>
     <div class="card"><div class="row"><div class="sp"><b>Notifikasi</b><div class="mu">${notifState()}</div></div>
     ${granted || !("Notification" in window) ? "" : `<button class="s" onclick="aktifNotif()">Aktifkan</button>`}</div></div>
-    <div class="card mu">Tips: di HP, buka menu browser lalu pilih “Tambahkan ke layar utama” supaya tampil seperti aplikasi (di iPhone, ini wajib agar notifikasi bisa aktif).</div>
-    <button class="d" style="width:100%" onclick="sb.auth.signOut()">Keluar</button>`;
+    <div class="card mu">Tips: di HP, buka menu browser lalu pilih “Tambahkan ke layar utama” supaya tampil seperti aplikasi (di iPhone ini wajib agar notifikasi aktif).</div>
+    <button class="d" style="width:100%" onclick="sb.auth.signOut()">Keluar</button></div>`;
 }
 
 /* ---------- Aksi profil & teman ---------- */
@@ -310,7 +386,7 @@ function salin(){ navigator.clipboard?.writeText(prof.code).then(() => toast("Ko
 async function simpanNama(){
   const v = $("#dn").value.trim(); if(!v) return toast("Nama tidak boleh kosong.");
   const {error} = await sb.from("profiles").update({display_name:v}).eq("id", me.id);
-  if(error) return toast(error.message); prof.display_name = v; toast("Nama disimpan.");
+  if(error) return toast(error.message); prof.display_name = v; toast("Nama disimpan."); draw();
 }
 async function simpanUser(){
   const {error} = await sb.rpc("set_username", {new_name:$("#un").value});
@@ -333,30 +409,42 @@ async function jawab(id, ok){
 }
 
 /* ---------- Obrolan ---------- */
-function open1(id){ peer = id; $("#msgs").dataset.s = ""; $("#ct").textContent = nm(id); show("chat"); refresh(); }
+function open1(id){
+  peer = id; $("#msgs").dataset.s = "";
+  $("#ct").textContent = nm(id);
+  $("#cav").style.background = colr(id); $("#cav").textContent = (nm(id)[0] || "?").toUpperCase();
+  show("chat"); refresh();
+}
 function back(){ peer = null; show("home"); refresh(); }
-function bub(x){
+function bub(x, first){
   const mine = x.sender === me.id;
+  const tick = mine ? `<span class="ck ${x.read_at ? "r" : ""}">${x.read_at ? "✓✓" : "✓"}</span>` : "";
+  const meta = `<span class="m">${hm(x.created_at)} ${tick}</span>`;
   let c;
   if(x.kind === "call" && CALL_RE.test(x.body)){
     const fresh = Date.now() - new Date(x.created_at) < 36e5;
-    c = `<b>📞 ${mine ? "Kamu memulai panggilan" : esc(nm(x.sender)) + " mengajak panggilan"}</b>` +
-      (fresh ? `<div style="margin-top:6px;display:flex;gap:6px"><button class="s" onclick="joinCall('${x.body}')">Gabung</button><button class="g s" onclick="tabCall('${x.body}')">Tab baru</button></div>` : `<div class="mu">Panggilan sudah lewat</div>`);
+    c = `<div class="cl"><div class="ci"><svg viewBox="0 0 24 24"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/></svg></div>
+      <div><b>${mine ? "Panggilan keluar" : "Panggilan masuk"}</b>${fresh ? `<div style="margin-top:4px;display:flex;gap:6px"><button class="s" onclick="joinCall('${x.body}')">Gabung</button><button class="g s" onclick="tabCall('${x.body}')">Tab baru</button></div>` : `<div class="mu">Sudah berakhir</div>`}</div></div>`;
   } else if(x.kind === "file" && x.file_path){
     const u = U[x.file_path]?.url;
-    if(isImg(x.file_type)){
-      c = u ? `<a href="${esc(u)}" target="_blank" rel="noopener"><img src="${esc(u)}" alt="${esc(x.file_name)}" loading="lazy"></a>` : `<span class="mu">Memuat foto…</span>`;
-    } else {
-      c = `<div class="row"><span style="font-size:26px">📄</span><div class="sp"><div class="ell"><b>${esc(x.file_name)}</b></div><div class="mu">${sz(x.file_size || 0)}</div></div>${u ? `<a href="${esc(u)}" target="_blank" rel="noopener">Buka</a>` : ""}</div>`;
+    if(isImg(x.file_type)) c = u ? `<a href="${esc(u)}" target="_blank" rel="noopener"><img src="${esc(u)}" alt="${esc(x.file_name)}" loading="lazy"></a>` : `<span class="mu">Memuat foto…</span>`;
+    else {
+      const ex = esc((x.file_name || "").split(".").pop().slice(0, 4).toUpperCase());
+      c = `<div class="fl"><div class="fi">${ex}</div><div class="sp" style="min-width:0;flex:1"><div class="ell"><b>${esc(x.file_name)}</b></div><div class="mu">${sz(x.file_size || 0)}</div></div>${u ? `<a href="${esc(u)}" target="_blank" rel="noopener">Buka</a>` : ""}</div>`;
     }
   } else c = esc(x.body);
-  return `<div class="b ${mine ? "me" : ""}">${c}<small>${hm(x.created_at)}${mine ? (x.read_at ? " ✓✓" : " ✓") : ""}</small></div>`;
+  return `<div class="b ${mine ? "me" : ""} ${first ? "first" : ""}">${c}${meta}</div>`;
 }
 function fillMsgs(){
   const box = $("#msgs"), near = box.scrollHeight - box.scrollTop - box.clientHeight < 120;
   const list = M.filter(x => x.sender === peer || x.recipient === peer).slice().reverse();
-  box.innerHTML = list.map(bub).join("")
-    || `<div class="mu" style="text-align:center;margin-top:20px">Belum ada pesan. Sapa dulu!</div>`;
+  let h = "", lastD = "", lastS = "";
+  for(const x of list){
+    const d = dkey(x.created_at);
+    if(d !== lastD){ h += `<div class="day">${dlabel(x.created_at)}</div>`; lastD = d; lastS = ""; }
+    h += bub(x, x.sender !== lastS); lastS = x.sender;
+  }
+  box.innerHTML = h || `<div class="day" style="margin-top:auto;margin-bottom:auto">Belum ada pesan. Sapa dulu!</div>`;
   if(near || !box.dataset.s){ box.scrollTop = box.scrollHeight; box.dataset.s = 1; }
 }
 async function send(){
@@ -405,8 +493,7 @@ async function pickFile(inp){
     const name = f.name.slice(0, 100);
     const {error} = await sb.from("messages").insert({sender:me.id, recipient:peer, body:name, kind:"file", file_path:path, file_name:name, file_type:type, file_size:blob.size});
     if(error){ sb.storage.from(BUCKET).remove([path]); return toast("Gagal mengirim: " + error.message); }
-    toast("Terkirim.");
-    refresh();
+    toast("Terkirim."); refresh();
   } finally { uploading = false; $("#atb").disabled = false; }
 }
 
@@ -429,7 +516,7 @@ function joinCall(url){
 }
 function tabCall(url){
   if(!CALL_RE.test(url)) return;
-  if($("#call").hidden === false) endCall();
+  if(!$("#call").hidden) endCall();
   window.open(url + jhash(), "_blank", "noopener");
 }
 function endCall(){ $("#cf").src = "about:blank"; $("#call").hidden = true; }
