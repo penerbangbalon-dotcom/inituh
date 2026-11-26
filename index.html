@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f766e">
+<meta name="mobile-web-app-capable" content="yes">
+<title>Inituh</title>
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--tx:#14181f;--mu:#6b7280;--ac:#0f766e;--on:#fff;--bd:#e5e7eb;--me:#d1f2ec;--er:#b91c1c;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e1116;--card:#171b22;--tx:#e8eaed;--mu:#9aa3af;--ac:#2dd4bf;--on:#06201c;--bd:#262c36;--me:#12403a;--er:#f87171;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0e1116;--card:#171b22;--tx:#e8eaed;--mu:#9aa3af;--ac:#2dd4bf;--on:#06201c;--bd:#262c36;--me:#12403a;--er:#f87171;color-scheme:dark}
+*{box-sizing:border-box}html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--tx);font:16px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.scr{display:flex;flex-direction:column;height:100%;max-width:640px;margin:0 auto;background:var(--bg)}
+.scr[hidden],[hidden]{display:none!important}
+header{display:flex;align-items:center;gap:8px;padding:12px 14px;background:var(--card);border-bottom:1px solid var(--bd);font-weight:600}
+header .sp{flex:1;min-width:0}
+#main,#msgs{flex:1;overflow-y:auto;padding:12px}
+button{font:inherit;cursor:pointer;border:0;border-radius:10px;padding:10px 14px;background:var(--ac);color:var(--on)}
+button:disabled{opacity:.5;cursor:default}
+button.g{background:transparent;color:var(--tx);border:1px solid var(--bd)}
+button.d{background:transparent;color:var(--er);border:1px solid var(--bd)}
+button.s{padding:6px 10px;font-size:14px}
+input{font:inherit;width:100%;padding:11px 12px;border:1px solid var(--bd);border-radius:10px;background:var(--card);color:var(--tx)}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:12px;margin-bottom:10px}
+.row{display:flex;align-items:center;gap:10px}.row .sp{flex:1;min-width:0}
+.av{width:40px;height:40px;border-radius:50%;background:var(--ac);color:var(--on);display:grid;place-items:center;font-weight:700;flex:none}
+.mu{color:var(--mu);font-size:14px}.ell{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bd{background:var(--ac);color:var(--on);border-radius:99px;padding:1px 7px;font-size:12px;font-weight:700}
+nav{display:flex;background:var(--card);border-top:1px solid var(--bd)}
+nav button{flex:1;background:transparent;color:var(--mu);border-radius:0;padding:14px 0}
+nav button.on{color:var(--ac);font-weight:700}
+.b{max-width:78%;padding:8px 12px;border-radius:14px;margin:4px 0;background:var(--card);border:1px solid var(--bd);word-wrap:break-word;white-space:pre-wrap}
+.b.me{margin-left:auto;background:var(--me);border-color:transparent}
+.b small{display:block;color:var(--mu);font-size:11px;text-align:right}
+.b a{color:var(--ac);font-weight:600}
+.b img{display:block;max-width:min(240px,60vw);max-height:300px;border-radius:10px}
+.bar{display:flex;gap:8px;padding:10px;background:var(--card);border-top:1px solid var(--bd)}
+.bar .at{padding:10px 12px;flex:none}
+.code{font:700 28px/1 ui-monospace,Menlo,monospace;letter-spacing:3px;text-align:center;margin:10px 0}
+#qr{display:grid;place-items:center;margin:8px 0}#qr>div{background:#fff;padding:8px;border-radius:10px}
+#toast{position:fixed;left:50%;bottom:80px;transform:translateX(-50%);background:var(--tx);color:var(--bg);padding:10px 16px;border-radius:10px;max-width:90%;z-index:30}
+h3{margin:14px 0 8px;font-size:15px;color:var(--mu)}
+.f{display:grid;gap:10px;padding:20px}
+#call{position:fixed;inset:0;z-index:20;max-width:none;margin:0;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+#cf{flex:1;border:0;width:100%;background:#000}
+</style>
+</head>
+<body>
+
+<div id="auth" class="scr" hidden>
+  <div class="f" style="margin-top:8vh">
+    <h1 style="margin:0">Inituh</h1>
+    <div class="mu" id="am">Masuk untuk mulai mengobrol.</div>
+    <input id="nm" placeholder="Nama tampilan" hidden>
+    <input id="em" type="email" placeholder="Email" autocomplete="email">
+    <input id="pw" type="password" placeholder="Kata sandi (min. 6 karakter)" autocomplete="current-password">
+    <button id="ab" onclick="auth()">Masuk</button>
+    <button class="g" id="at" onclick="mode()">Belum punya akun? Daftar</button>
+  </div>
+</div>
+
+<div id="home" class="scr" hidden>
+  <header>Inituh</header>
+  <div id="main"></div>
+  <nav id="tabs"></nav>
+</div>
+
+<div id="chat" class="scr" hidden>
+  <header>
+    <button class="g s" onclick="back()" aria-label="Kembali">←</button>
+    <span class="sp ell" id="ct"></span>
+    <button class="g s" onclick="startCall()" aria-label="Panggilan" title="Panggilan video/suara">📞</button>
+    <button class="g s" onclick="report()" aria-label="Laporkan" title="Laporkan">⚑</button>
+    <button class="d s" onclick="block()" aria-label="Blokir" title="Blokir">⛔</button>
+  </header>
+  <div id="msgs"></div>
+  <div class="bar">
+    <button class="g at" id="atb" onclick="$('#fi').click()" aria-label="Lampirkan foto atau dokumen" title="Foto / dokumen">📎</button>
+    <input id="fi" type="file" hidden accept="image/jpeg,image/png,image/webp,image/gif,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv" onchange="pickFile(this)">
+    <input id="mi" placeholder="Tulis pesan…" maxlength="2000" onkeydown="if(event.key==='Enter')send()">
+    <button onclick="send()">Kirim</button>
+  </div>
+</div>
+
+<div id="call" class="scr" hidden>
+  <header>
+    <button class="d s" onclick="endCall()">Tutup</button>
+    <span class="sp ell" id="cn">Panggilan</span>
+    <button class="g s" id="ctab">Buka di tab</button>
+  </header>
+  <iframe id="cf" title="Panggilan Jitsi" allow="camera; microphone; display-capture; autoplay; fullscreen; clipboard-write"></iframe>
+</div>
+
+<div id="toast" hidden></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+const APP = "Inituh";
+const sb = supabase.createClient(
+  "https://epdehfeoagahrnzbymne.supabase.co",
+  "sb_publishable_V8f61745CGGWgBifpjLCMA_8E7wDQKb"
+);
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+let me, prof, tab = "chat", peer = null, F = [], P = {}, M = [], found = null, ch, signup = false, uploading = false;
+const U = {};   // cache signed URL lampiran: path -> {url, exp}
+
+/* ---------- Konfigurasi lampiran & panggilan ---------- */
+const BUCKET = "attachments";
+const IMG_MAX = 5 * 1024 * 1024;    // 5 MB (foto, setelah dikompres)
+const DOC_MAX = 10 * 1024 * 1024;   // 10 MB (dokumen)
+const TYPES = {
+  jpg:"image/jpeg", jpeg:"image/jpeg", png:"image/png", webp:"image/webp", gif:"image/gif",
+  pdf:"application/pdf", doc:"application/msword",
+  docx:"application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  xls:"application/vnd.ms-excel",
+  xlsx:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  ppt:"application/vnd.ms-powerpoint",
+  pptx:"application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  txt:"text/plain", csv:"text/csv"
+};
+const JIT = "https://meet.jit.si/Inituh-";
+const CALL_RE = /^https:\/\/meet\.jit\.si\/Inituh-[0-9a-f]{16}$/;
+
+function toast(t){ const e = $("#toast"); e.textContent = t; e.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => e.hidden = true, 3500); }
+function show(id){ ["auth","home","chat"].forEach(x => $("#"+x).hidden = x !== id); }
+const nm = id => P[id]?.display_name || "Pengguna";
+const ini = id => esc((nm(id)[0] || "?").toUpperCase());
+const hm = t => new Date(t).toLocaleTimeString("id-ID", {hour:"2-digit", minute:"2-digit"});
+const isImg = t => (t || "").startsWith("image/");
+const sz = n => n >= 1048576 ? (n / 1048576).toFixed(1) + " MB" : Math.max(1, Math.round(n / 1024)) + " KB";
+const prev = x => x.kind === "file" ? (isImg(x.file_type) ? "📷 Foto" : "📎 " + (x.file_name || "Dokumen")) : x.kind === "call" ? "📞 Panggilan" : x.body;
+
+/* ---------- Notifikasi ---------- */
+let actx;
+document.addEventListener("pointerdown", () => { try{ actx = actx || new (window.AudioContext || window.webkitAudioContext)(); actx.resume?.(); }catch{} }, {once:true});
+function beep(){
+  try{
+    if(!actx) return;
+    const o = actx.createOscillator(), g = actx.createGain();
+    o.type = "sine"; o.frequency.value = 880; g.gain.value = .08;
+    o.connect(g); g.connect(actx.destination); o.start(); o.stop(actx.currentTime + .15);
+  }catch{}
+}
+async function notif(title, body, tag){
+  if(!("Notification" in window) || Notification.permission !== "granted") return;
+  try{
+    const reg = await navigator.serviceWorker?.getRegistration();
+    if(reg) return reg.showNotification(title, {body, tag, renotify:true, vibrate:[120]});
+    new Notification(title, {body, tag});
+  }catch{}
+}
+function notifState(){
+  if(!("Notification" in window)) return "Browser ini tidak mendukung notifikasi.";
+  if(Notification.permission === "granted") return "Aktif. Pesan baru akan muncul saat aplikasi terbuka atau di latar belakang.";
+  if(Notification.permission === "denied") return "Diblokir. Izinkan lewat pengaturan situs di browser.";
+  return "Belum aktif.";
+}
+async function aktifNotif(){
+  if(!("Notification" in window)) return toast("Browser tidak mendukung notifikasi.");
+  const r = await Notification.requestPermission();
+  toast(r === "granted" ? "Notifikasi diaktifkan." : "Izin notifikasi tidak diberikan.");
+  draw();
+}
+function onMsg(p){
+  const m = p.new;
+  if(!m || !me || m.sender === me.id) return;
+  const viewing = peer === m.sender && !document.hidden;
+  if(viewing) return;
+  const who = nm(m.sender), text = prev(m);
+  beep();
+  navigator.vibrate?.(100);
+  if(document.hidden) notif(m.kind === "call" ? "Panggilan dari " + who : who, text, "m-" + m.sender);
+  else toast(who + ": " + text);
+}
+if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
+
+/* ---------- Masuk / daftar ---------- */
+function mode(){
+  signup = !signup;
+  $("#nm").hidden = !signup;
+  $("#ab").textContent = signup ? "Daftar" : "Masuk";
+  $("#at").textContent = signup ? "Sudah punya akun? Masuk" : "Belum punya akun? Daftar";
+  $("#am").textContent = signup ? "Buat akun baru. Kamu akan mendapat kode unik." : "Masuk untuk mulai mengobrol.";
+}
+async function auth(){
+  const email = $("#em").value.trim(), password = $("#pw").value;
+  if(!email || password.length < 6) return toast("Isi email dan kata sandi (min. 6 karakter).");
+  let r;
+  if(signup){
+    r = await sb.auth.signUp({email, password, options:{data:{full_name:$("#nm").value.trim()}}});
+    if(!r.error && !r.data.session) toast("Cek email untuk konfirmasi, lalu masuk.");
+  } else r = await sb.auth.signInWithPassword({email, password});
+  if(r.error) toast(r.error.message);
+}
+sb.auth.onAuthStateChange((_e, s) => {
+  if(s?.user){ if(me?.id !== s.user.id){ me = s.user; setTimeout(boot, 0); } }
+  else { me = null; prof = null; peer = null; document.title = APP; if(ch) sb.removeChannel(ch); show("auth"); }
+});
+
+async function boot(){
+  const {data} = await sb.from("profiles").select("*").eq("id", me.id).single();
+  prof = data; P[me.id] = prof; show("home");
+  ch = sb.channel("rt")
+    .on("postgres_changes", {event:"*", schema:"public", table:"messages"}, refresh)
+    .on("postgres_changes", {event:"INSERT", schema:"public", table:"messages", filter:"recipient=eq." + me.id}, onMsg)
+    .on("postgres_changes", {event:"*", schema:"public", table:"friendships"}, refresh)
+    .subscribe();
+  refresh();
+}
+
+/* ---------- Data ---------- */
+async function sign(){
+  if(!peer) return;
+  const now = Date.now();
+  const need = [...new Set(M.filter(x => x.file_path && (x.sender === peer || x.recipient === peer) && (!U[x.file_path] || U[x.file_path].exp < now + 60000)).map(x => x.file_path))];
+  if(!need.length) return;
+  const {data} = await sb.storage.from(BUCKET).createSignedUrls(need, 3600);
+  (data || []).forEach(d => { if(d.signedUrl) U[d.path] = {url:d.signedUrl, exp:now + 3600000}; });
+}
+async function refresh(){
+  if(!me) return;
+  const [f, m] = await Promise.all([
+    sb.from("friendships").select("*"),
+    sb.from("messages").select("*").order("created_at", {ascending:false}).limit(500)
+  ]);
+  F = f.data || []; M = m.data || [];
+  const ids = [...new Set(F.flatMap(x => [x.requester, x.addressee]))].filter(i => i !== me.id);
+  if(ids.length){
+    const {data} = await sb.from("profiles").select("id,code,username,display_name").in("id", ids);
+    (data || []).forEach(p => P[p.id] = p);
+  }
+  P[me.id] = prof;
+  if(peer && M.some(x => x.sender === peer && x.recipient === me.id && !x.read_at)){
+    sb.from("messages").update({read_at:new Date().toISOString()}).eq("sender", peer).eq("recipient", me.id).is("read_at", null).then(() => {});
+  }
+  const un = M.filter(x => x.recipient === me.id && !x.read_at && x.sender !== peer).length;
+  document.title = (un ? "(" + un + ") " : "") + APP;
+  await sign();
+  draw();
+}
+const other = x => x.requester === me.id ? x.addressee : x.requester;
+const friends = () => F.filter(x => x.status === "accepted").map(other);
+const inc = () => F.filter(x => x.status === "pending" && x.addressee === me.id);
+const out = () => F.filter(x => x.status === "pending" && x.requester === me.id);
+
+/* ---------- Tampilan ---------- */
+function go(t){ tab = t; draw(); }
+function draw(){
+  if(peer) return fillMsgs();
+  const q = $("#q")?.value || "";
+  $("#main").innerHTML = tab === "chat" ? vChat() : tab === "teman" ? vTeman() : vProf();
+  $("#tabs").innerHTML = [["chat","Chat"],["teman","Teman"],["prof","Profil"]].map(([k, l]) =>
+    `<button class="${tab === k ? "on" : ""}" onclick="go('${k}')">${l}${k === "teman" && inc().length ? ` <span class="bd">${inc().length}</span>` : ""}</button>`).join("");
+  if(tab === "teman" && $("#q")) $("#q").value = q;
+  if(tab === "prof") new QRCode($("#qr"), {text: prof.code, width: 150, height: 150});
+}
+function vChat(){
+  const list = friends().map(id => {
+    const last = M.find(x => x.sender === id || x.recipient === id);
+    const un = M.filter(x => x.sender === id && x.recipient === me.id && !x.read_at).length;
+    return {id, last, un};
+  }).sort((a, b) => (b.last?.created_at || "").localeCompare(a.last?.created_at || ""));
+  if(!list.length) return `<div class="card mu">Belum ada teman. Buka tab Teman, lalu masukkan kode atau username temanmu.</div>`;
+  return list.map(({id, last, un}) => `
+    <div class="card row" onclick="open1('${id}')" style="cursor:pointer">
+      <div class="av">${ini(id)}</div>
+      <div class="sp"><div class="ell"><b>${esc(nm(id))}</b></div>
+        <div class="mu ell">${last ? esc(prev(last)) : "Mulai obrolan"}</div></div>
+      ${un ? `<span class="bd">${un}</span>` : ""}
+    </div>`).join("");
+}
+function vTeman(){
+  let h = `<div class="card"><div class="mu" style="margin-bottom:8px">Cari teman dengan kode atau username (harus persis).</div>
+    <div class="row"><input id="q" placeholder="Contoh: K7M3P9XQ" onkeydown="if(event.key==='Enter')cari()"><button onclick="cari()">Cari</button></div>`;
+  if(found === 0) h += `<div class="mu" style="margin-top:8px">Tidak ditemukan.</div>`;
+  else if(found) h += `<div class="row" style="margin-top:10px"><div class="av">${esc((found.display_name[0] || "?").toUpperCase())}</div>
+    <div class="sp"><b>${esc(found.display_name)}</b><div class="mu">${esc(found.username || found.code)}</div></div>
+    <button class="s" onclick="minta()">Tambah</button></div>`;
+  h += `</div>`;
+  if(inc().length) h += `<h3>Permintaan masuk</h3>` + inc().map(x => `
+    <div class="card row"><div class="av">${ini(x.requester)}</div><div class="sp"><b>${esc(nm(x.requester))}</b></div>
+    <button class="s" onclick="jawab('${x.id}',true)">Terima</button><button class="g s" onclick="jawab('${x.id}',false)">Tolak</button></div>`).join("");
+  if(out().length) h += `<h3>Menunggu persetujuan</h3>` + out().map(x => `
+    <div class="card row"><div class="av">${ini(x.addressee)}</div><div class="sp"><b>${esc(nm(x.addressee))}</b></div>
+    <button class="g s" onclick="jawab('${x.id}',false)">Batal</button></div>`).join("");
+  return h;
+}
+function vProf(){
+  const granted = "Notification" in window && Notification.permission === "granted";
+  return `<div class="card"><div class="mu" style="text-align:center">Kode kamu (bagikan ke teman)</div>
+    <div class="code">${esc(prof.code)}</div><div id="qr"></div>
+    <div class="row" style="justify-content:center"><button class="g s" onclick="salin()">Salin kode</button></div></div>
+    <div class="card"><div class="mu" style="margin-bottom:6px">Nama tampilan</div>
+    <div class="row"><input id="dn" value="${esc(prof.display_name)}" maxlength="40"><button class="s" onclick="simpanNama()">Simpan</button></div></div>
+    <div class="card"><div class="mu" style="margin-bottom:6px">Username (opsional, 4-20 karakter: huruf kecil, angka, _)</div>
+    <div class="row"><input id="un" value="${esc(prof.username || "")}" maxlength="20" placeholder="contoh: budi_sd12"><button class="s" onclick="simpanUser()">Simpan</button></div>
+    <div class="mu" style="margin-top:6px">Username hanya bisa diganti sekali setiap 30 hari.</div></div>
+    <div class="card"><div class="row"><div class="sp"><b>Notifikasi</b><div class="mu">${notifState()}</div></div>
+    ${granted || !("Notification" in window) ? "" : `<button class="s" onclick="aktifNotif()">Aktifkan</button>`}</div></div>
+    <div class="card mu">Tips: di HP, buka menu browser lalu pilih “Tambahkan ke layar utama” supaya tampil seperti aplikasi (di iPhone, ini wajib agar notifikasi bisa aktif).</div>
+    <button class="d" style="width:100%" onclick="sb.auth.signOut()">Keluar</button>`;
+}
+
+/* ---------- Aksi profil & teman ---------- */
+function salin(){ navigator.clipboard?.writeText(prof.code).then(() => toast("Kode disalin."), () => toast("Salin manual: " + prof.code)); }
+async function simpanNama(){
+  const v = $("#dn").value.trim(); if(!v) return toast("Nama tidak boleh kosong.");
+  const {error} = await sb.from("profiles").update({display_name:v}).eq("id", me.id);
+  if(error) return toast(error.message); prof.display_name = v; toast("Nama disimpan.");
+}
+async function simpanUser(){
+  const {error} = await sb.rpc("set_username", {new_name:$("#un").value});
+  if(error) return toast(error.message.includes("duplicate") ? "Username sudah dipakai." : error.message);
+  const {data} = await sb.from("profiles").select("*").eq("id", me.id).single(); prof = data; P[me.id] = data; toast("Username disimpan.");
+}
+async function cari(){
+  const q = $("#q").value.trim(); if(!q) return;
+  const {data} = await sb.rpc("find_profile", {q});
+  found = data?.[0] || 0; draw();
+}
+async function minta(){
+  const {error} = await sb.from("friendships").insert({requester:me.id, addressee:found.id});
+  if(error) return toast(error.code === "23505" ? "Sudah ada permintaan atau sudah berteman." : error.message);
+  found = null; toast("Permintaan terkirim."); refresh();
+}
+async function jawab(id, ok){
+  const r = ok ? await sb.from("friendships").update({status:"accepted"}).eq("id", id) : await sb.from("friendships").delete().eq("id", id);
+  if(r.error) toast(r.error.message); refresh();
+}
+
+/* ---------- Obrolan ---------- */
+function open1(id){ peer = id; $("#msgs").dataset.s = ""; $("#ct").textContent = nm(id); show("chat"); refresh(); }
+function back(){ peer = null; show("home"); refresh(); }
+function bub(x){
+  const mine = x.sender === me.id;
+  let c;
+  if(x.kind === "call" && CALL_RE.test(x.body)){
+    const fresh = Date.now() - new Date(x.created_at) < 36e5;
+    c = `<b>📞 ${mine ? "Kamu memulai panggilan" : esc(nm(x.sender)) + " mengajak panggilan"}</b>` +
+      (fresh ? `<div style="margin-top:6px;display:flex;gap:6px"><button class="s" onclick="joinCall('${x.body}')">Gabung</button><button class="g s" onclick="tabCall('${x.body}')">Tab baru</button></div>` : `<div class="mu">Panggilan sudah lewat</div>`);
+  } else if(x.kind === "file" && x.file_path){
+    const u = U[x.file_path]?.url;
+    if(isImg(x.file_type)){
+      c = u ? `<a href="${esc(u)}" target="_blank" rel="noopener"><img src="${esc(u)}" alt="${esc(x.file_name)}" loading="lazy"></a>` : `<span class="mu">Memuat foto…</span>`;
+    } else {
+      c = `<div class="row"><span style="font-size:26px">📄</span><div class="sp"><div class="ell"><b>${esc(x.file_name)}</b></div><div class="mu">${sz(x.file_size || 0)}</div></div>${u ? `<a href="${esc(u)}" target="_blank" rel="noopener">Buka</a>` : ""}</div>`;
+    }
+  } else c = esc(x.body);
+  return `<div class="b ${mine ? "me" : ""}">${c}<small>${hm(x.created_at)}${mine ? (x.read_at ? " ✓✓" : " ✓") : ""}</small></div>`;
+}
+function fillMsgs(){
+  const box = $("#msgs"), near = box.scrollHeight - box.scrollTop - box.clientHeight < 120;
+  const list = M.filter(x => x.sender === peer || x.recipient === peer).slice().reverse();
+  box.innerHTML = list.map(bub).join("")
+    || `<div class="mu" style="text-align:center;margin-top:20px">Belum ada pesan. Sapa dulu!</div>`;
+  if(near || !box.dataset.s){ box.scrollTop = box.scrollHeight; box.dataset.s = 1; }
+}
+async function send(){
+  const i = $("#mi"), body = i.value.trim(); if(!body) return;
+  i.value = "";
+  const {error} = await sb.from("messages").insert({sender:me.id, recipient:peer, body});
+  if(error){ i.value = body; return toast("Gagal mengirim: " + error.message); }
+  refresh();
+}
+
+/* ---------- Kirim foto & dokumen ---------- */
+function shrink(f){
+  return new Promise(res => {
+    const im = new Image(), u = URL.createObjectURL(f);
+    im.onload = () => {
+      URL.revokeObjectURL(u);
+      const k = Math.min(1, 1600 / Math.max(im.width, im.height));
+      if(k === 1 && f.size < 400e3) return res(f);
+      const c = document.createElement("canvas");
+      c.width = Math.round(im.width * k); c.height = Math.round(im.height * k);
+      const g = c.getContext("2d"); g.fillStyle = "#fff"; g.fillRect(0, 0, c.width, c.height); g.drawImage(im, 0, 0, c.width, c.height);
+      c.toBlob(b => res(b && b.size < f.size ? b : f), "image/jpeg", .82);
+    };
+    im.onerror = () => { URL.revokeObjectURL(u); res(f); };
+    im.src = u;
+  });
+}
+async function pickFile(inp){
+  const f = inp.files[0]; inp.value = "";
+  if(!f || !peer || uploading) return;
+  let ext = (f.name.split(".").pop() || "").toLowerCase();
+  if(!TYPES[ext]) return toast("Jenis file tidak didukung. Boleh: foto, PDF, Word, Excel, PowerPoint, TXT, CSV.");
+  let blob = f, type = TYPES[ext];
+  uploading = true; $("#atb").disabled = true;
+  try{
+    if(type.startsWith("image/") && ext !== "gif"){
+      blob = await shrink(f);
+      if(blob.type === "image/jpeg"){ type = "image/jpeg"; if(ext !== "jpg" && ext !== "jpeg") ext = "jpg"; }
+    }
+    const max = type.startsWith("image/") ? IMG_MAX : DOC_MAX;
+    if(blob.size > max) return toast("File terlalu besar. Maksimal " + sz(max) + " (file ini " + sz(blob.size) + ").");
+    toast("Mengunggah…");
+    const path = me.id + "/" + crypto.randomUUID() + "." + ext;
+    const up = await sb.storage.from(BUCKET).upload(path, blob, {contentType:type, upsert:false});
+    if(up.error) return toast("Gagal mengunggah: " + up.error.message);
+    const name = f.name.slice(0, 100);
+    const {error} = await sb.from("messages").insert({sender:me.id, recipient:peer, body:name, kind:"file", file_path:path, file_name:name, file_type:type, file_size:blob.size});
+    if(error){ sb.storage.from(BUCKET).remove([path]); return toast("Gagal mengirim: " + error.message); }
+    toast("Terkirim.");
+    refresh();
+  } finally { uploading = false; $("#atb").disabled = false; }
+}
+
+/* ---------- Panggilan (Jitsi) ---------- */
+const jhash = () => "#config.disableDeepLinking=true&userInfo.displayName=" + encodeURIComponent(JSON.stringify(prof?.display_name || "Pengguna"));
+async function startCall(){
+  if(!peer) return;
+  const a = new Uint8Array(8); crypto.getRandomValues(a);
+  const url = JIT + [...a].map(b => b.toString(16).padStart(2, "0")).join("");
+  const {error} = await sb.from("messages").insert({sender:me.id, recipient:peer, body:url, kind:"call"});
+  if(error) return toast("Gagal memulai panggilan: " + error.message);
+  refresh(); joinCall(url);
+}
+function joinCall(url){
+  if(!CALL_RE.test(url)) return;
+  $("#cn").textContent = "Panggilan · " + (peer ? nm(peer) : "");
+  $("#ctab").onclick = () => tabCall(url);
+  $("#cf").src = url + jhash();
+  $("#call").hidden = false;
+}
+function tabCall(url){
+  if(!CALL_RE.test(url)) return;
+  if($("#call").hidden === false) endCall();
+  window.open(url + jhash(), "_blank", "noopener");
+}
+function endCall(){ $("#cf").src = "about:blank"; $("#call").hidden = true; }
+
+/* ---------- Blokir & laporan ---------- */
+async function block(){
+  if(!confirm("Blokir " + nm(peer) + "? Kalian tidak bisa saling mengirim pesan.")) return;
+  await sb.from("blocks").insert({blocker:me.id, blocked:peer});
+  const fr = F.find(x => other(x) === peer); if(fr) await sb.from("friendships").delete().eq("id", fr.id);
+  toast("Pengguna diblokir."); back();
+}
+async function report(){
+  const reason = prompt("Alasan melaporkan " + nm(peer) + "?"); if(!reason || reason.trim().length < 3) return;
+  const {error} = await sb.from("reports").insert({reporter:me.id, reported:peer, reason:reason.trim()});
+  toast(error ? error.message : "Laporan terkirim.");
+}
+</script>
+</body>
+</html>
