@@ -131,7 +131,9 @@ h3{margin:16px 0 6px;font-size:13px;color:var(--ac);text-transform:uppercase;let
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
-const APP = "Inituh";
+const APP = "Inituh", VER = "v3";
+window.addEventListener("error", e => { try{ const t = document.getElementById("toast"); t.textContent = "Error: " + e.message; t.hidden = false; }catch{} });
+window.addEventListener("unhandledrejection", e => { try{ const t = document.getElementById("toast"); t.textContent = "Error: " + (e.reason?.message || e.reason); t.hidden = false; }catch{} });
 const sb = supabase.createClient(
   "https://epdehfeoagahrnzbymne.supabase.co",
   "sb_publishable_V8f61745CGGWgBifpjLCMA_8E7wDQKb"
@@ -378,7 +380,8 @@ function vProf(){
     <div class="card"><div class="row"><div class="sp"><b>Notifikasi</b><div class="mu">${notifState()}</div></div>
     ${granted || !("Notification" in window) ? "" : `<button class="s" onclick="aktifNotif()">Aktifkan</button>`}</div></div>
     <div class="card mu">Tips: di HP, buka menu browser lalu pilih “Tambahkan ke layar utama” supaya tampil seperti aplikasi (di iPhone ini wajib agar notifikasi aktif).</div>
-    <button class="d" style="width:100%" onclick="sb.auth.signOut()">Keluar</button></div>`;
+    <button class="d" style="width:100%" onclick="sb.auth.signOut()">Keluar</button>
+    <div class="mu" style="text-align:center;margin-top:14px">Inituh ${VER}</div></div>`;
 }
 
 /* ---------- Aksi profil & teman ---------- */
