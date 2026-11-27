@@ -21,3 +21,8 @@ Setiap kali file di GitHub diubah, Vercel otomatis memperbarui aplikasi.
 - Panggilan suara & video langsung di dalam aplikasi (WebRTC, file `calls.js`), tanpa Jitsi. Penghubung memakai tabel `call_signals` + Supabase Realtime (**jalankan `perbaikan-panggilan.sql` dulu**). Untuk jaringan yang ketat, isi `TURN` di bagian atas `calls.js`.
 - Bekerja selama Orbit terbuka di browser. Untuk notifikasi saat aplikasi tertutup sepenuhnya, perlu server Web Push (belum ada).
 - File tambahan: `notif.js`. SQL perbaikan: `perbaikan-profil.sql`, `perbaikan-izin.sql`.
+
+## Panggilan grup & cadangan notifikasi
+- Menu Kontak > tombol "Panggilan grup": pilih sampai 4 teman (maks. 5 orang), suara atau video. Peserta tidak harus saling berteman, cukup sama-sama diundang.
+- Panggilan, pesan, dan undangan teman dicek berkala (2-4 detik) sebagai cadangan bila Realtime Supabase tidak sampai.
+- Jalankan ulang `perbaikan-panggilan.sql` (aman diulang) agar tabel `call_signals` mendukung grup.

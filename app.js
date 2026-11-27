@@ -34,6 +34,7 @@ async function boot(){
   P[me.id]=prof;show(false);
   ch=sb.channel("rt").on("postgres_changes",{event:"*",schema:"public",table:"messages"},p=>{onMsg(p);refresh()}).on("postgres_changes",{event:"*",schema:"public",table:"friendships"},p=>{onFriend(p);refresh()}).subscribe();
   if(typeof initCalls==="function")initCalls();
+  if(typeof startPolling==="function")startPolling();
   refresh();
 }
 
@@ -77,7 +78,7 @@ function vKontak(){
   const l=friends().sort((a,b)=>nm(a).localeCompare(nm(b),"id"));
   if(!l.length)return `<div class="card mu">Belum ada kontak. Buka tab ➕ Tambah untuk mencari teman dengan kode atau username.</div>`;
   const rows=l.map(id=>{const p=P[id]||{};return `<div class="it ${peer===id?"on":""}" data-n="${esc((nm(id)+" "+(p.username||"")+" "+(p.code||"")).toLowerCase())}" onclick="open1('${id}')">${av(id)}<div class="sp"><b class="ell" style="display:block">${esc(nm(id))}</b><div class="mu ell">${p.username?"@"+esc(p.username):esc(p.code||"")}</div></div><button class="d s" onclick="event.stopPropagation();hapusTeman('${id}')" title="Hapus dari kontak">Hapus</button></div>`}).join("");
-  return `<div class="card"><input id="kq" placeholder="Cari kontak…" oninput="kfilter()"></div><h3>Kontak (${l.length})</h3>${rows}<div id="kn" class="mu" style="padding:8px" hidden>Tidak ada kontak yang cocok.</div>`;
+  return `<div class="card"><input id="kq" placeholder="Cari kontak…" oninput="kfilter()"><button class="g s" style="width:100%;margin-top:8px" onclick="openGroup()">👥 Panggilan grup</button></div><h3>Kontak (${l.length})</h3>${rows}<div id="kn" class="mu" style="padding:8px" hidden>Tidak ada kontak yang cocok.</div>`;
 }
 function kfilter(){
   const q=($("#kq")?.value||"").trim().toLowerCase();let n=0;

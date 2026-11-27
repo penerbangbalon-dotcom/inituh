@@ -72,10 +72,18 @@
   </div>
 </div>
 <div id="cl" class="ov cl" hidden>
-  <video id="rv" autoplay playsinline></video>
+  <div id="grid" class="grid"></div>
   <video id="lv" autoplay playsinline muted hidden></video>
-  <div class="ci"><div id="cav"></div><div id="cn"></div><div id="cs"></div></div>
+  <div class="ci"><div id="cn"></div><div id="cs"></div></div>
   <div class="cc" id="cc"></div>
+</div>
+<div id="gp" class="ov" hidden onclick="if(event.target===this)gpClose()">
+  <div class="sheet">
+    <div class="row" style="margin-bottom:8px"><b class="sp" style="font-size:18px">Panggilan grup</b><button class="i" onclick="gpClose()" aria-label="Tutup">✕</button></div>
+    <div class="mu" style="margin-bottom:8px">Pilih sampai 4 teman (maks. 5 orang termasuk kamu).</div>
+    <div id="gl"></div>
+    <div class="row" style="margin-top:12px"><button class="sp" onclick="startGroup(false)">📞 Suara</button><button class="sp" onclick="startGroup(true)">🎥 Video</button></div>
+  </div>
 </div>
 <div id="toast" hidden></div>
 

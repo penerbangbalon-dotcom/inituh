@@ -60,10 +60,11 @@ function badge(){
   document.title=n?`(${n}) Orbit`:"Orbit";
 }
 
-/* ----- Kejadian realtime ----- */
-async function onMsg(p){
-  if(p.eventType!=="INSERT"||!me)return;
-  const m=p.new;if(m.recipient!==me.id)return;
+/* ----- Pesan & undangan: lewat Realtime, dengan pengecekan berkala sebagai cadangan ----- */
+const NM=new Set(),NF=new Set();let seeded=false,lastSig="",pollM=null;
+async function notifyMsg(m){
+  if(!me||m.recipient!==me.id||NM.has(m.id))return;NM.add(m.id);
+  if(!seeded)return;
   const name=await who(m.sender);
   if(/^📞 Panggilan (suara|video) ·/.test(m.body||""))return;
   if(peer===m.sender&&!away())return;
@@ -71,19 +72,41 @@ async function onMsg(p){
   if(S.snd)ding();
   if(away())sysNotify(name,txt,"msg-"+m.sender);else toast("💬 "+name+": "+txt);
 }
-async function onFriend(p){
-  if(!me)return;
-  const r=p.new||{};
-  if(p.eventType==="INSERT"&&r.addressee===me.id&&r.status==="pending"){
+async function notifyFriend(r,kind){
+  const key=r.id+":"+r.status;if(NF.has(key))return;NF.add(key);
+  if(!seeded)return;
+  if(kind==="in"){
     const name=await who(r.requester);
     if(S.snd)ding();
-    if(away())sysNotify("Undangan pertemanan",name+" ingin berteman denganmu","fr-"+r.requester);else toast("👋 "+name+" mengundangmu berteman. Buka tab ➕ Teman.");
-  }else if(p.eventType==="UPDATE"&&r.status==="accepted"&&r.requester===me.id){
+    if(away())sysNotify("Undangan pertemanan",name+" ingin berteman denganmu","fr-"+r.requester);else toast("👋 "+name+" mengundangmu berteman. Buka tab ➕ Tambah.");
+  }else{
     const name=await who(r.addressee);
     if(S.snd)ding();
     if(away())sysNotify("Undangan diterima",name+" menerima permintaan pertemananmu","fr-"+r.addressee);else toast("✅ "+name+" menerima permintaan pertemananmu.");
   }
 }
+function onMsg(p){if(p.eventType==="INSERT"&&me)notifyMsg(p.new)}
+function onFriend(p){
+  if(!me)return;const r=p.new||{};
+  if(p.eventType==="INSERT"&&r.addressee===me.id&&r.status==="pending")notifyFriend(r,"in");
+  else if(p.eventType==="UPDATE"&&r.status==="accepted"&&r.requester===me.id)notifyFriend(r,"ok");
+}
+async function pollAll(){
+  if(!me)return;
+  const [m,f]=await Promise.all([sb.from("messages").select("*").order("created_at",{ascending:false}).limit(30),sb.from("friendships").select("*")]);
+  if(m.error||f.error)return;
+  const ms=(m.data||[]).slice().reverse(),fs=f.data||[];
+  const sg=ms.map(x=>x.id+(x.read_at?"r":"")).join()+"|"+fs.map(x=>x.id+x.status).join();
+  for(const x of ms)await notifyMsg(x);
+  for(const x of fs){
+    if(x.status==="pending"&&x.addressee===me.id)await notifyFriend(x,"in");
+    else if(x.status==="accepted"&&x.requester===me.id)await notifyFriend(x,"ok");
+  }
+  const first=!seeded;seeded=true;
+  if(sg!==lastSig){lastSig=sg;if(!first)refresh()}
+}
+function startPolling(){stopPolling();seeded=false;lastSig="";NM.clear();NF.clear();pollAll();pollM=setInterval(pollAll,4000)}
+function stopPolling(){clearInterval(pollM);pollM=null}
 
 /* ----- Layar pengaturan ----- */
 function permText(){
