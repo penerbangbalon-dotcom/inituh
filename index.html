@@ -23,10 +23,13 @@
     <div class="top">
       <div id="me" onclick="go('prof')" style="cursor:pointer"></div>
       <span class="sp">Orbit</span>
-      <button class="i" id="bk" onclick="go('chat')" hidden>←</button>
-      <button class="i" onclick="go('teman')">➕</button>
     </div>
     <div class="body" id="main"></div>
+    <nav id="tabs">
+      <button data-v="chat" onclick="go('chat')">💬<span>Chat</span></button>
+      <button data-v="teman" onclick="go('teman')">➕<span>Teman</span><b class="bd" id="nb" hidden></b></button>
+      <button data-v="prof" onclick="go('prof')">👤<span>Profil</span></button>
+    </nav>
   </div>
   <div class="pane">
     <div id="ph" class="ph">Pilih obrolan untuk mulai mengobrol</div>

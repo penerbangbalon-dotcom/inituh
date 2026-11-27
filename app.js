@@ -50,7 +50,7 @@ const out=()=>F.filter(x=>x.status==="pending"&&x.requester===me.id);
 /* ----- Tampilan ----- */
 function go(v){view=v;draw(true)}
 function draw(side=true){
-  $("#me").innerHTML=av(me.id,"sm");$("#bk").hidden=view==="chat";
+  $("#me").innerHTML=av(me.id,"sm");document.querySelectorAll("#tabs button").forEach(b=>b.classList.toggle("on",b.dataset.v===view));const n=inc().length;$("#nb").hidden=!n;$("#nb").textContent=n;
   if(side){
     const q=$("#q")?.value||"";
     $("#main").innerHTML=view==="chat"?vChat():view==="teman"?vTeman():vProf();
