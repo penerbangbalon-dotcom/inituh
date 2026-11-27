@@ -26,3 +26,6 @@ Setiap kali file di GitHub diubah, Vercel otomatis memperbarui aplikasi.
 - Menu Kontak > tombol "Panggilan grup": pilih sampai 4 teman (maks. 5 orang), suara atau video. Peserta tidak harus saling berteman, cukup sama-sama diundang.
 - Panggilan, pesan, dan undangan teman dicek berkala (2-4 detik) sebagai cadangan bila Realtime Supabase tidak sampai.
 - Jalankan ulang `perbaikan-panggilan.sql` (aman diulang) agar tabel `call_signals` mendukung grup.
+
+## Server TURN (agar suara tersambung di jaringan seluler)
+Buka `config.js`, ikuti petunjuk di dalamnya (daftar gratis di metered.ca, tempel alamat kredensial di `ORBIT_TURN_API`), lalu unggah ulang ke GitHub.

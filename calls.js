@@ -3,10 +3,22 @@
    dengan pengecekan berkala (polling) sebagai cadangan bila Realtime tidak sampai.
    Memakai: me, prof, P, peer, sb, $, esc, nm, toast, refresh, friends (app.js) dan tone, ringStart, ringStop, sysNotify, away, who, ac, S (notif.js). */
 
-/* STUN gratis cukup untuk sebagian besar jaringan. Bila sering gagal tersambung (jaringan seluler/kantor ketat),
-   tambahkan server TURN, contoh: {urls:"turn:NAMA-SERVER:443?transport=tcp",username:"USER",credential:"PASSWORD"} */
-const TURN=[];
-const ICE=[{urls:["stun:stun.l.google.com:19302","stun:stun1.l.google.com:19302"]},...TURN];
+/* Server ICE: STUN gratis + TURN dari config.js (lihat petunjuk di sana). TURN dibutuhkan bila dua HP
+   berada di jaringan seluler/WiFi berbeda; tanpa TURN panggilan sering macet di "Menyambungkan…". */
+const STUN={urls:["stun:stun.l.google.com:19302","stun:stun1.l.google.com:19302"]};
+let ICE=[STUN],iceAt=0;
+async function loadIce(){
+  if(Date.now()-iceAt<30*60e3)return;
+  const base=[STUN,...(window.ORBIT_TURN||[])];ICE=base;iceAt=Date.now();
+  const u=window.ORBIT_TURN_API;if(!u)return;
+  try{
+    const ctl=new AbortController(),t=setTimeout(()=>ctl.abort(),4000);
+    const r=await fetch(u,{signal:ctl.signal});clearTimeout(t);
+    if(!r.ok)throw new Error(r.status);
+    const j=await r.json();if(Array.isArray(j))ICE=[...base,...j];
+  }catch(e){iceAt=0;console.warn("Gagal mengambil server TURN",e)}
+}
+const hasTurn=()=>ICE.some(s=>[].concat(s.urls).some(x=>/^turns?:/.test(x)));
 const MAXP=5;
 
 let CL=null,inbox=null,sq=Promise.resolve(),rb=null,PI={},sigErr="",seenSig=new Set(),pollS=null;
@@ -22,14 +34,17 @@ function handleRow(r){
   onSig({t:r.kind,from:r.from_user,cid:r.cid,...(r.data||{})});
 }
 function initCalls(){
-  if(inbox)sb.removeChannel(inbox);clearInterval(pollS);
+  if(inbox)sb.removeChannel(inbox);clearTimeout(pollS);
   inbox=sb.channel("cs-"+me.id).on("postgres_changes",{event:"INSERT",schema:"public",table:"call_signals",filter:"to_user=eq."+me.id},p=>handleRow(p.new)).subscribe();
   /* Tandai sinyal lama sebagai sudah dilihat, lalu cek berkala (cadangan bila Realtime tidak sampai) */
   sb.from("call_signals").select("*").eq("to_user",me.id).order("created_at",{ascending:true}).limit(200).then(({data})=>{
     (data||[]).forEach(r=>seenSig.add(r.id));
-    clearInterval(pollS);pollS=setInterval(pollSig,2000);
+    schedPoll();
   });
+  loadIce();
 }
+/* Lebih sering saat sedang dalam panggilan agar sinyal koneksi cepat sampai */
+function schedPoll(){clearTimeout(pollS);pollS=setTimeout(async()=>{try{await pollSig()}catch{}if(me)schedPoll()},CL?600:2000)}
 async function pollSig(){
   if(!me)return;
   const {data}=await sb.from("call_signals").select("*").eq("to_user",me.id).order("created_at",{ascending:false}).limit(60);
@@ -37,7 +52,7 @@ async function pollSig(){
 }
 function resetCall(){
   if(CL)finish(CL,"error");
-  clearInterval(pollS);pollS=null;
+  clearTimeout(pollS);pollS=null;
   if(inbox){sb.removeChannel(inbox);inbox=null}
   if(typeof stopPolling==="function")stopPolling();
 }
@@ -68,7 +83,11 @@ function mkPeer(c,id){
     if(e.track.kind==="video")pr.hasV=true;
     renderTiles();
   };
-  pc.onicecandidate=e=>{if(e.candidate)sig(id,{t:"ice",cand:e.candidate.toJSON()},c.cid)};
+  pr.q=[];
+  pc.onicecandidate=e=>{
+    if(!e.candidate)return;pr.q.push(e.candidate.toJSON());clearTimeout(pr.qt);
+    pr.qt=setTimeout(()=>{const a=pr.q.splice(0);if(a.length)sig(id,{t:"ice",cands:a},c.cid)},200);
+  };
   pc.onconnectionstatechange=()=>{
     const s=pc.connectionState;
     if(s==="connected"){
@@ -123,7 +142,9 @@ function checkRingDone(c){
   const s=others(c).map(id=>c.st[id]);
   finish(c,s.every(x=>x==="declined")?"declined":s.every(x=>x==="busy")?"busy":"noanswer");
 }
-const connTimeout=c=>{clearTimeout(c.to);c.to=setTimeout(()=>{
+const connTimeout=c=>{
+  clearTimeout(c.hintT);c.hintT=setTimeout(()=>{if(CL===c&&c.state!=="conn"){c.hint=true;showCall()}},8000);
+  clearTimeout(c.to);c.to=setTimeout(()=>{
   if(CL!==c||c.state==="conn")return;
   others(c).forEach(id=>{if(c.pp[id]||c.joined.has(id))sig(id,{t:"leave"},c.cid)});
   finish(c,"failed");
@@ -142,6 +163,7 @@ async function startCall(video,ids){
   showCall();
   try{c.stream=await getMedia(video)}
   catch(e){CL=null;showCall();return toast("Tidak bisa memakai mikrofon/kamera. Izinkan aksesnya di browser.")}
+  await loadIce();
   if(CL!==c){c.stream.getTracks().forEach(t=>t.stop());return}
   $("#lv").srcObject=c.stream;$("#lv").hidden=!c.stream.getVideoTracks().length;
   let fail=0;
@@ -179,7 +201,7 @@ async function onSig(p){
     return;
   }
   if(p.t==="ice"&&(!c||c.cid!==p.cid)){
-    if(Object.keys(PI).length<20&&(PI[p.cid]||[]).length<100)(PI[p.cid]=PI[p.cid]||[]).push({from:p.from,cand:p.cand});
+    if(Object.keys(PI).length<20&&(PI[p.cid]||[]).length<200)(p.cands||[p.cand]).forEach(x=>(PI[p.cid]=PI[p.cid]||[]).push({from:p.from,cand:x}));
     return;
   }
   if(!c||c.cid!==p.cid||!c.members.includes(p.from))return;
@@ -193,7 +215,7 @@ async function onSig(p){
         connectTo(c,x);showCall();break;
       case "offer":if(c.live)await onOffer(c,x,p.sdp);break;
       case "answer":{const pr=c.pp[x];if(pr){await pr.pc.setRemoteDescription(p.sdp);flushIce(c,x)}break}
-      case "ice":addIce(c,x,p.cand);break;
+      case "ice":(p.cands||[p.cand]).forEach(k=>k&&addIce(c,x,k));break;
       case "decline":case "busy":if(c.dir==="out"&&PEND.includes(c.st[x])){c.st[x]=p.t==="busy"?"busy":"declined";showCall();checkRingDone(c)}break;
       case "cancel":if(x===c.host&&!c.live)finish(c,"cancel");else dropMember(c,x,"left");break;
       case "leave":case "end":dropMember(c,x,"left");break;
@@ -207,6 +229,7 @@ async function acceptCall(){
   ac();ringStop();clearTimeout(c.to);c.state="connecting";showCall();
   try{c.stream=await getMedia(c.video)}
   catch(e){toast("Tidak bisa memakai mikrofon/kamera. Izinkan aksesnya di browser.");sig(c.host,{t:"decline"},c.cid);return finish(c,"error")}
+  await loadIce();
   if(CL!==c){c.stream.getTracks().forEach(t=>t.stop());return}
   $("#lv").srcObject=c.stream;$("#lv").hidden=!c.stream.getVideoTracks().length;
   c.live=true;connTimeout(c);
@@ -226,7 +249,7 @@ function togCam(){const c=CL;if(!c?.stream)return;c.camoff=!c.camoff;c.stream.ge
 
 function finish(c,why){
   if(!c||c.done)return;c.done=true;
-  [c.to,c.dt,c.slowT].forEach(clearTimeout);clearInterval(c.tk);
+  [c.to,c.dt,c.slowT,c.hintT].forEach(clearTimeout);clearInterval(c.tk);
   ringStop();rbStop();
   try{c.stream?.getTracks().forEach(t=>t.stop())}catch{}
   Object.values(c.pp).forEach(pr=>{clearTimeout(pr.dt);try{pr.pc.close()}catch{}});c.pp={};
@@ -234,7 +257,7 @@ function finish(c,why){
   const dur=c.t0?Date.now()-c.t0:0;
   if(CL===c)CL=null;
   showCall();
-  const msg={declined:"Panggilan ditolak",noanswer:"Tidak dijawab",busy:"Sedang dalam panggilan lain",failed:"Koneksi panggilan terputus",end:dur?"Panggilan selesai · "+fmt(dur):""}[why];
+  const msg={declined:"Panggilan ditolak",noanswer:"Tidak dijawab",busy:"Sedang dalam panggilan lain",failed:c.t0||hasTurn()?"Koneksi panggilan terputus":"Koneksi suara gagal: jaringan kalian butuh server TURN (lihat config.js).",end:dur?"Panggilan selesai · "+fmt(dur):""}[why];
   if(msg)toast(msg);
   if(c.dir==="out"&&c.members.length===2){
     const body=dur?`📞 Panggilan ${c.video?"video":"suara"} · ${fmt(dur)}`:why==="declined"?"📵 Panggilan ditolak":["cancel","noanswer","busy"].includes(why)?"📵 Panggilan tidak terjawab":null;
@@ -279,7 +302,7 @@ function showCall(){
   $("#cn").textContent=g?"Panggilan grup · "+c.members.length+" peserta":nmx(others(c)[0]||c.host);
   $("#cs").textContent=ringIn?(g?nmx(c.host)+" mengajak panggilan "+(c.video?"video":"suara")+" grup":c.video?"Panggilan video masuk":"Panggilan suara masuk")
     :c.state==="ring"?(others(c).some(id=>c.st[id]==="ringing")?"Berdering…":c.slow?"Menunggu penerima membuka Orbit…":"Memanggil…")
-    :c.state==="conn"?fmt(Date.now()-c.t0):"Menyambungkan…";
+    :c.state==="conn"?fmt(Date.now()-c.t0):"Menyambungkan…"+(c.hint?(hasTurn()?" (jaringan sulit, mencoba terus)":" (mungkin butuh server TURN)"):"");
   const hasCam=!!c.stream?.getVideoTracks().length;
   $("#cc").innerHTML=ringIn
     ?`<button class="cb no" onclick="declineCall()" aria-label="Tolak">📵<span>Tolak</span></button><button class="cb ok" onclick="acceptCall()" aria-label="Terima">${c.video?"🎥":"📞"}<span>Terima</span></button>`
