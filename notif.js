@@ -81,6 +81,20 @@ function ringStart(){
 function ringStop(){clearInterval(rt);rt=null;try{navigator.vibrate?.(0)}catch{}}
 function ringTest(){if(typeof CL!=="undefined"&&CL)return;ringStart();setTimeout(()=>{if(!CL)ringStop()},3500)}
 
+/* ----- Web Push: notifikasi tetap muncul saat aplikasi tertutup (butuh server, lihat README) ----- */
+const b64u=s=>{const r=(s+"=".repeat((4-s.length%4)%4)).replace(/-/g,"+").replace(/_/g,"/"),a=atob(r);return Uint8Array.from(a,c=>c.charCodeAt(0))};
+async function subscribePush(){
+  try{
+    if(!me||!window.ORBIT_VAPID||!("PushManager" in window)||!("serviceWorker" in navigator)||!("Notification" in window)||Notification.permission!=="granted")return;
+    const reg=await navigator.serviceWorker.ready;
+    let sub=await reg.pushManager.getSubscription();
+    if(!sub)sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64u(window.ORBIT_VAPID)});
+    const j=sub.toJSON();
+    const {error}=await sb.rpc("save_push_sub",{p_endpoint:j.endpoint,p_p256dh:j.keys.p256dh,p_auth:j.keys.auth});
+    if(error)console.warn("simpan langganan push gagal",error.message);
+  }catch(e){console.warn("push",e)}
+}
+
 /* ----- Notifikasi sistem ----- */
 if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
 async function sysNotify(title,body,tag){
@@ -92,7 +106,7 @@ async function sysNotify(title,body,tag){
 async function askPerm(){
   if(!("Notification" in window))return toast("Browser ini tidak mendukung notifikasi.");
   const r=await Notification.requestPermission();
-  setOpen(true);
+  setOpen(true);if(r==="granted")subscribePush();
   if(r!=="granted")toast("Izin ditolak. Aktifkan lewat ikon gembok di kolom alamat browser.");
 }
 const away=()=>document.hidden||!document.hasFocus();

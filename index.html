@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#008069">
 <title>Orbit</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -79,6 +81,12 @@
   <video id="lv" autoplay playsinline muted hidden></video>
   <div class="ci"><div id="cn"></div><div id="cs"></div></div>
   <div class="cc" id="cc"></div>
+</div>
+<div id="op" class="ov top" hidden onclick="if(event.target===this)this.hidden=true">
+  <div class="sheet">
+    <div class="row" style="margin-bottom:8px"><b class="sp" style="font-size:18px">Keluaran suara</b><button class="i" onclick="$('#op').hidden=true" aria-label="Tutup">✕</button></div>
+    <div id="ol" class="od"></div>
+  </div>
 </div>
 <div id="gp" class="ov" hidden onclick="if(event.target===this)gpClose()">
   <div class="sheet">

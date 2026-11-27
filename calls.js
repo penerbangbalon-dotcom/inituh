@@ -42,6 +42,7 @@ function initCalls(){
     schedPoll();
   });
   loadIce();
+  setTimeout(()=>{if(typeof subscribePush==="function")subscribePush()},1500);
 }
 /* Lebih sering saat sedang dalam panggilan agar sinyal koneksi cepat sampai */
 function schedPoll(){clearTimeout(pollS);pollS=setTimeout(async()=>{try{await pollSig()}catch{}if(me)schedPoll()},CL?600:2000)}
@@ -282,7 +283,15 @@ function finish(c,why){
 }
 
 /* ----- Nada tunggu untuk penelepon ----- */
-function rbStart(){if(!S.ring)return;rbStop();const go=()=>{tone(425,0,.9,"sine",1);tone(450,0,.9,"sine",1)};setTimeout(go,350);rb=setInterval(go,3000)}
+function pulse(f,at,d,v=1){
+  const x=ac();if(!x)return;
+  const t=x.currentTime+at,o=x.createOscillator(),g=x.createGain(),m=Math.max(.0002,S.vol*.35*v);
+  o.type="sine";o.frequency.value=f;
+  g.gain.setValueAtTime(.0001,t);g.gain.linearRampToValueAtTime(m,t+.04);g.gain.setValueAtTime(m,t+d-.07);g.gain.linearRampToValueAtTime(.0001,t+d);
+  o.connect(g);g.connect(x.destination);o.start(t);o.stop(t+d+.05);
+}
+/* Nada sambung: dua nada lembut pendek, jeda, diulang (gaya nada tunggu WhatsApp) */
+function rbStart(){if(!S.ring)return;rbStop();const go=()=>{pulse(440,0,.34);pulse(440,.5,.34)};setTimeout(go,250);rb=setInterval(go,3000)}
 const dialBeep=()=>{tone(523,0,.1,"triangle");tone(784,.12,.16,"triangle")};
 const connBeep=()=>{tone(660,0,.1,"sine");tone(880,.11,.16,"sine")};
 const endBeep=()=>{tone(494,0,.16,"sine");tone(370,.18,.28,"sine")};
@@ -330,14 +339,20 @@ function showCall(){
   renderTiles();
 }
 
-/* Ganti keluaran suara saat panggilan (speaker -> headset -> ...), satu ketukan satu perangkat */
+/* Pilih keluaran suara saat panggilan (daftar perangkat: otomatis, speaker, headset, ...) */
 async function cycOut(){
   const {o}=await loadDevs(false);
   const l=o.filter(x=>x.deviceId&&!BADID.includes(x.deviceId));
-  if(l.length<2)return toast("Hanya ada satu perangkat keluaran suara yang terdeteksi.");
-  let i=l.findIndex(x=>x.deviceId===effOut());i=(i+1)%l.length;
-  S.out=l[i].deviceId;saveS();applyOut();
-  toast("🔊 "+(l[i].label||"Perangkat "+(i+1)));
+  const cur=effOut(),on=id=>(S.out||"")===id;
+  const rows=[{id:"",t:"Otomatis (ikuti headset/mikrofon)"},...l.map((x,i)=>({id:x.deviceId,t:devName(x,i)}))];
+  $("#ol").innerHTML=rows.map(r=>`<button class="g${on(r.id)?" sel":""}" data-id="${esc(r.id)}" onclick="pickOut(this.dataset.id)">${on(r.id)?"✓ ":""}${esc(r.t)}${r.id&&r.id===cur?" · sedang dipakai":""}</button>`).join("")
+    +(l.length?"":'<div class="mu">Tidak ada perangkat keluaran yang terdeteksi.</div>');
+  $("#op").hidden=false;
+}
+function pickOut(id){
+  S.out=id||"";saveS();applyOut();$("#op").hidden=true;
+  toast(id?"🔊 Keluaran suara diganti":"🔊 Keluaran suara: otomatis");
+  setTimeout(()=>{try{ding()}catch{}},150);
 }
 
 /* ----- Pilih peserta panggilan grup ----- */

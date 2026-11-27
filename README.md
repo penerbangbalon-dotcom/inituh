@@ -29,3 +29,10 @@ Setiap kali file di GitHub diubah, Vercel otomatis memperbarui aplikasi.
 
 ## Server TURN (agar suara tersambung di jaringan seluler)
 Buka `config.js`, ikuti petunjuk di dalamnya (daftar gratis di metered.ca, tempel alamat kredensial di `ORBIT_TURN_API`), lalu unggah ulang ke GitHub.
+
+## Notifikasi saat aplikasi tertutup (Web Push)
+Perlu 3 langkah satu kali:
+1. **Vercel** > Settings > Environment Variables, isi: `VAPID_PUBLIC` (sama dengan `ORBIT_VAPID` di `config.js`), `VAPID_PRIVATE`, `VAPID_SUBJECT` (mis. `mailto:emailanda@gmail.com`), `SUPABASE_URL`, `SUPABASE_SERVICE_KEY` (kunci *service_role*, rahasia), `PUSH_SECRET`. Lalu **Redeploy**.
+2. **Supabase** > SQL Editor: tempel `perbaikan-push.sql`, ganti `v_url` dan `v_secret`, Run.
+3. Buka Orbit di tiap perangkat, Pengaturan > Aktifkan notifikasi.
+Di iPhone, Orbit harus dipasang dulu ke Layar Utama (Bagikan > Tambah ke Layar Utama).
