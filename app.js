@@ -23,15 +23,16 @@ async function auth(){
 }
 sb.auth.onAuthStateChange((_e,s)=>{
   if(s?.user){if(me?.id!==s.user.id){me=s.user;setTimeout(boot,0)}}
-  else{me=prof=peer=null;if(ch)sb.removeChannel(ch);show(true)}
+  else{me=prof=peer=null;if(ch)sb.removeChannel(ch);if(typeof endInc==="function")endInc();show(true)}
 });
 async function boot(){
-  let {data}=await sb.from("profiles").select("*").eq("id",me.id).maybeSingle();
-  if(!data){await sb.rpc("ensure_profile");({data}=await sb.from("profiles").select("*").eq("id",me.id).maybeSingle())}
+  let {data,error:e0}=await sb.from("profiles").select("*").eq("id",me.id).maybeSingle();
+  if(e0)toast("Gagal baca profil: "+e0.message);
+  if(!data){const r=await sb.rpc("ensure_profile");if(r.error)toast("ensure_profile gagal: "+r.error.message);({data}=await sb.from("profiles").select("*").eq("id",me.id).maybeSingle())}
   prof=data||{id:me.id,code:"",username:null,display_name:me.user_metadata?.full_name||(me.email||"Saya").split("@")[0]};
   if(!data)toast("Profil belum lengkap. Jalankan perbaikan-profil.sql di Supabase.");
   P[me.id]=prof;show(false);
-  ch=sb.channel("rt").on("postgres_changes",{event:"*",schema:"public",table:"messages"},refresh).on("postgres_changes",{event:"*",schema:"public",table:"friendships"},refresh).subscribe();
+  ch=sb.channel("rt").on("postgres_changes",{event:"*",schema:"public",table:"messages"},p=>{onMsg(p);refresh()}).on("postgres_changes",{event:"*",schema:"public",table:"friendships"},p=>{onFriend(p);refresh()}).subscribe();
   refresh();
 }
 
@@ -62,6 +63,7 @@ function draw(side=true){
     if(view==="prof"&&prof.code)new QRCode($("#qr"),{text:prof.code,width:150,height:150});
   }
   if(peer)fillMsgs();
+  badge();
 }
 function vChat(){
   const l=friends().map(id=>({id,last:M.find(x=>x.sender===id||x.recipient===id),un:M.filter(x=>x.sender===id&&x.recipient===me.id&&!x.read_at).length})).sort((a,b)=>(b.last?.created_at||"").localeCompare(a.last?.created_at||""));
@@ -79,14 +81,14 @@ function vTeman(){
 }
 function vProf(){
   return `<div class="card" style="text-align:center">${av(me.id,"xl")}<div style="margin:10px"><button class="g s" onclick="$('#pi').click()">Ganti foto profil</button><input type="file" id="pi" accept="image/*" hidden onchange="foto(this)"></div>
-  <div class="mu">Kode kamu (bagikan ke teman)</div><div class="code">${esc(prof.code)}</div><div id="qr"></div><button class="g s" onclick="salin()">Salin kode</button></div>
+  <div class="mu">Kode kamu (bagikan ke teman)</div><div class="code">${prof.code?esc(prof.code):"(belum ada, jalankan perbaikan-profil.sql di Supabase)"}</div><div id="qr"></div><button class="g s" onclick="salin()">Salin kode</button></div>
   <div class="card"><div class="mu" style="margin-bottom:6px">Nama tampilan</div><div class="row"><input id="dn" value="${esc(prof.display_name)}" maxlength="40"><button class="s" onclick="simpanNama()">Simpan</button></div></div>
   <div class="card"><div class="mu" style="margin-bottom:6px">Username (opsional: 4-20 karakter, huruf kecil, angka, _)</div><div class="row"><input id="un" value="${esc(prof.username||"")}" maxlength="20" placeholder="contoh: budi_sd12"><button class="s" onclick="simpanUser()">Simpan</button></div><div class="mu" style="margin-top:6px">Bisa diganti sekali setiap 30 hari.</div></div>
   <button class="d" style="width:100%" onclick="sb.auth.signOut()">Keluar</button>`;
 }
 
 /* ----- Profil & teman ----- */
-const salin=()=>navigator.clipboard?.writeText(prof.code).then(()=>toast("Kode disalin."),()=>toast("Salin manual: "+prof.code));
+const salin=()=>!prof.code?toast("Kode belum ada. Jalankan perbaikan-profil.sql."):navigator.clipboard?.writeText(prof.code).then(()=>toast("Kode disalin."),()=>toast("Salin manual: "+prof.code));
 async function simpanNama(){const v=$("#dn").value.trim();if(!v)return toast("Nama tidak boleh kosong.");const {error}=await sb.from("profiles").update({display_name:v}).eq("id",me.id);if(error)return toast(error.message);prof.display_name=v;toast("Nama disimpan.")}
 async function simpanUser(){
   const {error}=await sb.rpc("set_username",{new_name:$("#un").value});
@@ -149,7 +151,7 @@ async function send(){
 }
 function call(){
   const url="https://meet.jit.si/orbit-"+crypto.randomUUID().replace(/-/g,"").slice(0,14);
-  window.open(url,"_blank");
+  window.open(url,"_blank");toast("Memanggil "+nm(peer)+"…");
   sb.from("messages").insert({sender:me.id,recipient:peer,body:"📞 Ajakan panggilan, ketuk untuk bergabung: "+url}).then(()=>refresh());
 }
 async function block(){

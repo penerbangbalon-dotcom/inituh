@@ -23,6 +23,7 @@
     <div class="top">
       <div id="me" onclick="go('prof')" style="cursor:pointer"></div>
       <span class="sp">Orbit</span>
+      <button class="i" onclick="setOpen(true)" title="Pengaturan" aria-label="Pengaturan">⚙️</button>
     </div>
     <div class="body" id="main"></div>
     <nav id="tabs">
@@ -51,10 +52,40 @@
     </div>
   </div>
 </div>
+<div id="set" class="ov" hidden onclick="if(event.target===this)setOpen(false)">
+  <div class="sheet">
+    <div class="row" style="margin-bottom:10px"><b class="sp" style="font-size:18px">Pengaturan</b><button class="i" onclick="setOpen(false)" aria-label="Tutup">✕</button></div>
+    <div class="card">
+      <div class="mu">Notifikasi di perangkat</div>
+      <div class="row" style="margin-top:6px"><span class="sp" id="ns"></span><button class="s" id="nbtn" onclick="askPerm()">Aktifkan</button></div>
+    </div>
+    <div class="card">
+      <div class="opt"><label class="sp" for="s-notif">Notifikasi pesan &amp; undangan teman</label><input type="checkbox" id="s-notif" onchange="chg()"></div>
+      <div class="opt"><label class="sp" for="s-snd">Suara pesan &amp; undangan</label><button class="g s" onclick="ding()">Coba</button><input type="checkbox" id="s-snd" onchange="chg()"></div>
+      <div class="opt"><label class="sp" for="s-ring">Nada dering panggilan masuk</label><button class="g s" onclick="ringTest()">Coba</button><input type="checkbox" id="s-ring" onchange="chg()"></div>
+      <div class="opt"><label class="sp" for="s-tone">Pilihan nada dering</label><select id="s-tone" onchange="chg();ringTest()"></select></div>
+      <div class="opt"><label class="sp" for="s-vol">Volume</label><input type="range" id="s-vol" min="10" max="100" step="5" oninput="chg()" style="width:50%"></div>
+    </div>
+    <div class="mu">Notifikasi berjalan selama Orbit terbuka di browser (boleh di tab lain atau layar terkunci pada sebagian perangkat). Ketuk layar sekali setelah membuka aplikasi agar suara bisa berbunyi. Pengaturan ini tersimpan di perangkat ini saja.</div>
+  </div>
+</div>
+<div id="inc" class="ov inc" hidden>
+  <div class="ic">
+    <div class="mu">Panggilan masuk</div>
+    <div id="ica" style="margin:18px 0 10px"></div>
+    <div id="icn" style="font-size:22px;font-weight:700"></div>
+    <div class="mu" style="margin-top:4px">Mengajak kamu menelepon…</div>
+    <div class="row" style="justify-content:center;gap:28px;margin-top:34px">
+      <button class="cb no" onclick="declineCall()" aria-label="Tolak">📵<span>Tolak</span></button>
+      <button class="cb ok" onclick="acceptCall()" aria-label="Terima">📞<span>Terima</span></button>
+    </div>
+  </div>
+</div>
 <div id="toast" hidden></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="app.js"></script>
+<script src="notif.js"></script>
 </body>
 </html>
