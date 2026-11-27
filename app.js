@@ -3,6 +3,7 @@ const $=s=>document.querySelector(s);
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 let me,prof,view="chat",peer=null,F=[],P={},M=[],found=null,ch,signup=false,U={};
 const toast=t=>{const e=$("#toast");e.textContent=t;e.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>e.hidden=true,3500)};
+addEventListener("error",e=>toast("Error: "+e.message));addEventListener("unhandledrejection",e=>toast("Error: "+(e.reason?.message||e.reason)));
 const show=a=>{$("#auth").hidden=!a;$("#app").hidden=a};
 const nm=id=>P[id]?.display_name||"Pengguna";
 const av=(id,c="")=>{const u=P[id]?.avatar_url;return `<div class="av ${c}"${u?` style="background-image:url('${esc(u)}')"`:""}>${u?"":esc((nm(id)[0]||"?").toUpperCase())}</div>`};
@@ -25,8 +26,11 @@ sb.auth.onAuthStateChange((_e,s)=>{
   else{me=prof=peer=null;if(ch)sb.removeChannel(ch);show(true)}
 });
 async function boot(){
-  const {data}=await sb.from("profiles").select("*").eq("id",me.id).single();
-  prof=data;P[me.id]=prof;show(false);
+  let {data}=await sb.from("profiles").select("*").eq("id",me.id).maybeSingle();
+  if(!data){await sb.rpc("ensure_profile");({data}=await sb.from("profiles").select("*").eq("id",me.id).maybeSingle())}
+  prof=data||{id:me.id,code:"",username:null,display_name:me.user_metadata?.full_name||(me.email||"Saya").split("@")[0]};
+  if(!data)toast("Profil belum lengkap. Jalankan perbaikan-profil.sql di Supabase.");
+  P[me.id]=prof;show(false);
   ch=sb.channel("rt").on("postgres_changes",{event:"*",schema:"public",table:"messages"},refresh).on("postgres_changes",{event:"*",schema:"public",table:"friendships"},refresh).subscribe();
   refresh();
 }
@@ -55,7 +59,7 @@ function draw(side=true){
     const q=$("#q")?.value||"";
     $("#main").innerHTML=view==="chat"?vChat():view==="teman"?vTeman():vProf();
     if(view==="teman"&&$("#q"))$("#q").value=q;
-    if(view==="prof")new QRCode($("#qr"),{text:prof.code,width:150,height:150});
+    if(view==="prof"&&prof.code)new QRCode($("#qr"),{text:prof.code,width:150,height:150});
   }
   if(peer)fillMsgs();
 }
