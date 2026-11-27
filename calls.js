@@ -1,5 +1,5 @@
 /* Orbit: panggilan suara & video langsung di dalam aplikasi (WebRTC).
-   Penghubung (signaling) memakai Supabase Realtime broadcast, tanpa tabel/SQL tambahan.
+   Penghubung (signaling) memakai tabel call_signals + Supabase Realtime (jalankan perbaikan-panggilan.sql).
    Memakai: me, P, peer, F, sb, $, av, nm, toast, refresh, friends (app.js) dan tone, ringStart, ringStop, sysNotify, away, who (notif.js). */
 
 /* STUN gratis sudah cukup untuk sebagian besar jaringan.
@@ -8,33 +8,30 @@
 const TURN=[];
 const ICE=[{urls:["stun:stun.l.google.com:19302","stun:stun1.l.google.com:19302"]},...TURN];
 
-let CL=null,inbox=null,oc=null,ocFor="",sq=Promise.resolve(),rb=null;
+let CL=null,inbox=null,sq=Promise.resolve(),rb=null,PI={},sigErr="";
 const fmt=ms=>{const s=Math.floor(ms/1000);return String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0")};
 
 /* ----- Penghubung ----- */
 function initCalls(){
   if(inbox)sb.removeChannel(inbox);
-  inbox=sb.channel("call-"+me.id).on("broadcast",{event:"sig"},m=>onSig(m.payload)).subscribe();
+  inbox=sb.channel("cs-"+me.id).on("postgres_changes",{event:"INSERT",schema:"public",table:"call_signals",filter:"to_user=eq."+me.id},p=>{
+    const r=p.new||{};onSig({t:r.kind,from:r.from_user,cid:r.cid,...(r.data||{})});
+  }).subscribe();
 }
 function resetCall(){
-  if(CL)finish(CL,"cancel");
+  if(CL)finish(CL,"error");
   if(inbox){sb.removeChannel(inbox);inbox=null}
-  if(oc){sb.removeChannel(oc);oc=null;ocFor=""}
 }
+/* Kirim sinyal (berurutan). Mengembalikan true bila berhasil. */
 function sig(to,p,cid){
-  const msg={...p,from:me.id,cid:cid||CL?.cid};
-  sq=sq.then(async()=>{
-    if(ocFor!==to||!oc){
-      if(oc)sb.removeChannel(oc);
-      ocFor=to;oc=sb.channel("call-"+to);
-      await new Promise((res,rej)=>{
-        const t=setTimeout(()=>rej(new Error("timeout")),8000);
-        oc.subscribe(s=>{if(s==="SUBSCRIBED"){clearTimeout(t);res()}else if(s==="CHANNEL_ERROR"||s==="TIMED_OUT"){clearTimeout(t);rej(new Error(s))}});
-      });
-    }
-    await oc.send({type:"broadcast",event:"sig",payload:msg});
-  }).catch(e=>{console.warn("sinyal panggilan gagal",e);try{if(oc)sb.removeChannel(oc)}catch{}oc=null;ocFor=""});
-  return sq;
+  const {t,...data}=p;
+  const row={from_user:me.id,to_user:to,cid:cid||CL?.cid,kind:t,data};
+  const job=sq.then(async()=>{
+    const {error}=await sb.from("call_signals").insert(row);
+    if(error){sigErr=error.message;console.warn("sinyal panggilan gagal",error);return false}
+    return true;
+  }).catch(e=>{sigErr=String(e?.message||e);return false});
+  sq=job;return job;
 }
 
 /* ----- Media & koneksi ----- */
@@ -80,8 +77,11 @@ async function startCall(video){
   if(CL!==c){c.stream.getTracks().forEach(t=>t.stop());return}
   try{
     const pc=mkPC(c),o=await pc.createOffer();await pc.setLocalDescription(o);
-    sig(c.peer,{t:"offer",video,sdp:{type:o.type,sdp:o.sdp}},c.cid);
+    sig(c.peer,{t:"offer",video,sdp:{type:o.type,sdp:o.sdp}},c.cid).then(ok=>{
+      if(!ok&&CL===c){toast("Panggilan gagal dikirim: "+sigErr+(/call_signals/.test(sigErr)?" — jalankan perbaikan-panggilan.sql di Supabase.":""));finish(c,"error")}
+    });
     rbStart();
+    c.slowT=setTimeout(()=>{if(CL===c&&c.state==="ring"&&!c.acked){c.slow=true;showCall()}},10000);
     c.to=setTimeout(()=>{sig(c.peer,{t:"cancel"},c.cid);finish(c,"noanswer")},45000);
   }catch(e){finish(c,"failed")}
 }
@@ -93,15 +93,20 @@ async function onSig(p){
     if(CL)return sig(p.from,{t:"busy"},p.cid);
     const name=await who(p.from);
     if(CL)return sig(p.from,{t:"busy"},p.cid);
-    const c=CL={cid:p.cid,peer:p.from,video:!!p.video,dir:"in",state:"ring",offer:p.sdp,ice:[]};
+    const c=CL={cid:p.cid,peer:p.from,video:!!p.video,dir:"in",state:"ring",offer:p.sdp,ice:PI[p.cid]||[]};
+    delete PI[p.cid];
+    sig(p.from,{t:"ring"},p.cid);
     showCall();if(S.ring)ringStart();
     c.to=setTimeout(()=>finish(c,"cancel"),50000);
     if(away())sysNotify(p.video?"🎥 Panggilan video masuk":"📞 Panggilan masuk",name,"call-"+p.from);
     return;
   }
-  const c=CL;if(!c||c.cid!==p.cid||c.peer!==p.from)return;
+  const c=CL;
+  if(p.t==="ice"&&(!c||c.cid!==p.cid)){(PI[p.cid]=PI[p.cid]||[]).push(p.cand);return}
+  if(!c||c.cid!==p.cid||c.peer!==p.from)return;
   try{
-    if(p.t==="answer"&&c.dir==="out"){
+    if(p.t==="ring"&&c.dir==="out"&&c.state==="ring"){c.acked=true;c.slow=false;showCall()}
+    else if(p.t==="answer"&&c.dir==="out"){
       rbStop();clearTimeout(c.to);c.state="connecting";showCall();connTimeout(c);
       await c.pc.setRemoteDescription(p.sdp);flushIce(c);
     }else if(p.t==="ice")addIce(c,p.cand);
@@ -136,7 +141,7 @@ function togCam(){const c=CL;if(!c?.stream)return;c.camoff=!c.camoff;c.stream.ge
 
 function finish(c,why){
   if(!c||c.done)return;c.done=true;
-  [c.to,c.dt].forEach(clearTimeout);clearInterval(c.tk);
+  [c.to,c.dt,c.slowT].forEach(clearTimeout);clearInterval(c.tk);
   ringStop();rbStop();
   try{c.stream?.getTracks().forEach(t=>t.stop())}catch{}
   try{c.pc?.close()}catch{}
@@ -164,7 +169,7 @@ function showCall(){
   o.hidden=false;
   o.classList.toggle("vid",c.state==="conn"&&!!(c.video||c.rvid));
   $("#cav").innerHTML=av(c.peer,"xl");$("#cn").textContent=nm(c.peer);
-  $("#cs").textContent=c.state==="ring"?(c.dir==="in"?(c.video?"Panggilan video masuk":"Panggilan suara masuk"):"Memanggil…"):c.state==="conn"?fmt(Date.now()-c.t0):"Menyambungkan…";
+  $("#cs").textContent=c.state==="ring"?(c.dir==="in"?(c.video?"Panggilan video masuk":"Panggilan suara masuk"):c.acked?"Berdering…":c.slow?"Menunggu penerima membuka Orbit…":"Memanggil…"):c.state==="conn"?fmt(Date.now()-c.t0):"Menyambungkan…";
   $("#cc").innerHTML=c.dir==="in"&&c.state==="ring"
     ?`<button class="cb no" onclick="declineCall()" aria-label="Tolak">📵<span>Tolak</span></button><button class="cb ok" onclick="acceptCall()" aria-label="Terima">${c.video?"🎥":"📞"}<span>Terima</span></button>`
     :`<button class="cb mt ${c.muted?"on":""}" onclick="togMute()" aria-label="Mikrofon">${c.muted?"🔇":"🎤"}<span>Mikrofon</span></button>${c.video?`<button class="cb mt ${c.camoff?"on":""}" onclick="togCam()" aria-label="Kamera">📷<span>Kamera</span></button>`:""}<button class="cb no" onclick="hangup()" aria-label="Akhiri">📵<span>Akhiri</span></button>`;
