@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#008069">
+<title>Itutuh</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="auth" class="f" hidden>
+  <h1>Itutuh</h1>
+  <div class="mu" id="am">Masuk untuk mulai mengobrol.</div>
+  <input id="nm" placeholder="Nama tampilan" hidden>
+  <input id="em" type="email" placeholder="Email" autocomplete="email">
+  <input id="pw" type="password" placeholder="Kata sandi (min. 6 karakter)" autocomplete="current-password">
+  <button id="ab" onclick="auth()">Masuk</button>
+  <button class="g" id="at" onclick="mode()">Belum punya akun? Daftar</button>
+</div>
+
+<div id="app" hidden>
+  <div class="side">
+    <div class="top">
+      <div id="me" onclick="go('prof')" style="cursor:pointer"></div>
+      <span class="sp">Itutuh</span>
+      <button class="i" id="bk" onclick="go('chat')" hidden>←</button>
+      <button class="i" onclick="go('teman')">➕</button>
+    </div>
+    <div class="body" id="main"></div>
+  </div>
+  <div class="pane">
+    <div id="ph" class="ph">Pilih obrolan untuk mulai mengobrol</div>
+    <div id="cv" class="cv" hidden>
+      <div class="top">
+        <button class="i back" onclick="back()">←</button>
+        <div id="ca"></div><span class="sp ell" id="ct"></span>
+        <button class="i" onclick="call()" title="Panggilan">📞</button>
+        <button class="i" onclick="report()" title="Laporkan">⚑</button>
+        <button class="i" onclick="block()" title="Blokir">⛔</button>
+      </div>
+      <div id="msgs"></div>
+      <div class="bar">
+        <button class="i" onclick="$('#fi').click()" title="Kirim file">📎</button>
+        <input type="file" id="fi" hidden onchange="upl(this)">
+        <input id="mi" placeholder="Ketik pesan" maxlength="2000" onkeydown="if(event.key==='Enter')send()">
+        <button onclick="send()">Kirim</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div id="toast" hidden></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
