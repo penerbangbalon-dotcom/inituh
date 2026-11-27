@@ -1,14 +1,12 @@
-/* Pengaturan server TURN untuk panggilan (opsional tapi SANGAT disarankan).
-   Tanpa TURN, panggilan sering macet di "Menyambungkan…" bila dua HP berada di jaringan seluler/WiFi berbeda.
-
-   Cara termudah (gratis 20 GB/bulan, cukup untuk ratusan jam panggilan suara):
-   1. Daftar di https://www.metered.ca  (menu: Open Relay / TURN Server)
-   2. Buat aplikasi, lalu salin "API Key" dan nama aplikasi (subdomain)
-   3. Tempel di ORBIT_TURN_API di bawah, contoh:
-      "https://namaaplikasi.metered.live/api/v1/turn/credentials?apiKey=KUNCIKAMU"
-   Kunci ini memang dipakai di sisi browser; Metered membatasi pemakaiannya dari dasbor mereka. */
+/* Pengaturan server TURN untuk panggilan (Metered, workspace orbit-obrolan).
+   Password sudah terisi.
+   Catatan: file ini dibaca terbuka oleh browser. Itu memang cara kerja TURN di sisi klien;
+   pemakaian bisa dibatasi atau kredensialnya diganti kapan saja dari dasbor Metered. */
+const _TU="8fe5f2822613260720558802",_TP="KpEjQSRAdyyFjA4e";
 window.ORBIT_TURN_API="";
-
-/* Alternatif: isi server TURN manual (dari layanan apa pun), contoh:
-   window.ORBIT_TURN=[{urls:"turn:nama-server.com:443?transport=tcp",username:"USER",credential:"PASSWORD"}]; */
-window.ORBIT_TURN=[];
+window.ORBIT_TURN=[
+  {urls:"turn:global.relay.metered.ca:80",username:_TU,credential:_TP},
+  {urls:"turn:global.relay.metered.ca:80?transport=tcp",username:_TU,credential:_TP},
+  {urls:"turn:global.relay.metered.ca:443",username:_TU,credential:_TP},
+  {urls:"turns:global.relay.metered.ca:443?transport=tcp",username:_TU,credential:_TP}
+];
