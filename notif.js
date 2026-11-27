@@ -11,16 +11,35 @@ const saveS=()=>{try{localStorage.setItem(SK,JSON.stringify(S))}catch{}};
 let AC;
 function ac(){
   try{
-    if(!AC){AC=new(window.AudioContext||window.webkitAudioContext)();if(S.out&&AC.setSinkId)AC.setSinkId(S.out).catch(()=>{})}
+    if(!AC){AC=new(window.AudioContext||window.webkitAudioContext)();if(effOut()&&AC.setSinkId)AC.setSinkId(effOut()).catch(()=>{})}
     if(AC.state==="suspended")AC.resume();
   }catch{}
   return AC;
 }
 /* ----- Pilihan perangkat suara (headset/speaker/mikrofon) ----- */
 const canSink=()=>"setSinkId" in HTMLMediaElement.prototype;
+const BADID=["default","communications"];
+/* Keluaran otomatis: bila pengguna belum memilih manual, suara mengikuti perangkat mikrofon yang dipakai
+   (headset dengan mic -> suara juga ke headset), bukan speaker bawaan laptop. */
+let AUTO="";
+const effOut=()=>S.out||AUTO||"";
 function applyOut(){
-  document.querySelectorAll("#grid video").forEach(v=>v.setSinkId&&v.setSinkId(S.out||"").catch(()=>{}));
-  if(AC?.setSinkId)AC.setSinkId(S.out||"").catch(()=>{});
+  const o=effOut();
+  document.querySelectorAll("#grid video").forEach(v=>{v.dataset.sk=o;v.setSinkId&&v.setSinkId(o).catch(()=>{})});
+  if(AC?.setSinkId)AC.setSinkId(o).catch(()=>{});
+}
+async function pairOut(stream){
+  try{
+    if(S.out||!canSink()){AUTO="";return applyOut()}
+    const t=stream?.getAudioTracks?.()[0];if(!t)return;
+    const st=t.getSettings?.()||{};
+    const d=await navigator.mediaDevices.enumerateDevices();
+    let gid=st.groupId;
+    if(!gid){const mic=d.find(x=>x.kind==="audioinput"&&x.deviceId===st.deviceId);gid=mic?.groupId}
+    const m=gid&&d.find(x=>x.kind==="audiooutput"&&x.groupId===gid&&!BADID.includes(x.deviceId));
+    AUTO=m?m.deviceId:"";
+    applyOut();
+  }catch(e){console.warn("pairOut",e)}
 }
 async function loadDevs(ask){
   if(!navigator.mediaDevices?.enumerateDevices)return {o:[],m:[]};
@@ -34,8 +53,8 @@ const devName=(x,i)=>x.label||("Perangkat "+(i+1));
 async function fillDevs(ask){
   const {o,m}=await loadDevs(ask);
   const opt=(l,sel)=>l.map((x,i)=>`<option value="${esc(x.deviceId)}"${x.deviceId===sel?" selected":""}>${esc(devName(x,i))}</option>`).join("");
-  $("#s-out").innerHTML=`<option value="">Otomatis (default sistem)</option>`+opt(o.filter(x=>x.deviceId!=="default"),S.out);
-  $("#s-mic").innerHTML=`<option value="">Otomatis (default sistem)</option>`+opt(m.filter(x=>x.deviceId!=="default"),S.mic);
+  $("#s-out").innerHTML=`<option value="">Otomatis (ikuti headset/mikrofon)</option>`+opt(o.filter(x=>x.deviceId!=="default"),S.out);
+  $("#s-mic").innerHTML=`<option value="">Otomatis (ikuti headset/mikrofon)</option>`+opt(m.filter(x=>x.deviceId!=="default"),S.mic);
   $("#s-out").disabled=!canSink();
   $("#dv-note").textContent=canSink()?(o.length&&!o.some(x=>x.label)?"Ketuk \"Muat daftar perangkat\" dan izinkan mikrofon agar nama perangkat tampil.":""):"Browser ini tidak bisa memilih keluaran suara; ganti lewat pengaturan perangkat/Bluetooth.";
 }

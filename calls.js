@@ -70,14 +70,27 @@ function sig(to,p,cid){
 
 /* ----- Media & koneksi ----- */
 async function getMedia(video){
-  const a={echoCancellation:true,noiseSuppression:true};
-  if(S.mic)a.deviceId={ideal:S.mic};
-  try{return await navigator.mediaDevices.getUserMedia({audio:a,video:video?{facingMode:"user",width:{ideal:640}}:false})}
-  catch(e){if(video){try{return await navigator.mediaDevices.getUserMedia({audio:a})}catch{}}throw e}
+  const a={echoCancellation:true,noiseSuppression:true,autoGainControl:true};
+  let mic=S.mic;
+  /* Bila keluaran dipilih manual (mis. headset) tapi mikrofon "otomatis", pakai mikrofon di perangkat yang sama */
+  if(!mic&&S.out){
+    try{
+      const d=await navigator.mediaDevices.enumerateDevices();
+      const o=d.find(x=>x.kind==="audiooutput"&&x.deviceId===S.out);
+      const m=o?.groupId&&d.find(x=>x.kind==="audioinput"&&x.groupId===o.groupId&&!BADID.includes(x.deviceId));
+      if(m)mic=m.deviceId;
+    }catch{}
+  }
+  if(mic)a.deviceId={ideal:mic};
+  let s;
+  try{s=await navigator.mediaDevices.getUserMedia({audio:a,video:video?{facingMode:"user",width:{ideal:640}}:false})}
+  catch(e){if(video){try{s=await navigator.mediaDevices.getUserMedia({audio:a})}catch{}}if(!s)throw e}
+  await pairOut(s);
+  return s;
 }
 function mkPeer(c,id){
   if(c.pp[id])return c.pp[id];
-  const pc=new RTCPeerConnection({iceServers:ICE}),pr=c.pp[id]={id,pc,state:"connecting"};
+  const pc=new RTCPeerConnection({iceServers:ICE,bundlePolicy:"max-bundle",iceCandidatePoolSize:2}),pr=c.pp[id]={id,pc,state:"connecting"};
   c.stream.getTracks().forEach(t=>pc.addTrack(t,c.stream));
   pc.ontrack=e=>{
     pr.rs=e.streams[0]||new MediaStream([e.track]);
@@ -87,7 +100,7 @@ function mkPeer(c,id){
   pr.q=[];
   pc.onicecandidate=e=>{
     if(!e.candidate)return;pr.q.push(e.candidate.toJSON());clearTimeout(pr.qt);
-    pr.qt=setTimeout(()=>{const a=pr.q.splice(0);if(a.length)sig(id,{t:"ice",cands:a},c.cid)},200);
+    pr.qt=setTimeout(()=>{const a=pr.q.splice(0);if(a.length)sig(id,{t:"ice",cands:a},c.cid)},60);
   };
   pc.onconnectionstatechange=()=>{
     const s=pc.connectionState;
@@ -293,7 +306,7 @@ function renderTiles(){
     let t=[...gr.children].find(x=>x.dataset.id===id);
     if(!t){t=document.createElement("div");t.className="tile";t.dataset.id=id;t.innerHTML='<video autoplay playsinline></video><div class="tc"><div class="ta"></div><div class="tn"></div><div class="ts"></div></div>';gr.appendChild(t)}
     const pr=c.pp[id],v=t.querySelector("video");
-    if(!v.dataset.sk){v.dataset.sk=1;if(S.out&&v.setSinkId)v.setSinkId(S.out).catch(()=>{})}
+    if(v.setSinkId&&v.dataset.sk!==effOut()){v.dataset.sk=effOut();v.setSinkId(effOut()).catch(()=>{})}
     if(pr?.rs){if(v.srcObject!==pr.rs){v.srcObject=pr.rs;v.play?.().catch(()=>{})}}else if(v.srcObject)v.srcObject=null;
     t.classList.toggle("v",!!(pr?.hasV&&pr.state==="conn"));
     t.querySelector(".ta").innerHTML=avx(id,ids.length>2?"":"xl");
@@ -320,10 +333,10 @@ function showCall(){
 /* Ganti keluaran suara saat panggilan (speaker -> headset -> ...), satu ketukan satu perangkat */
 async function cycOut(){
   const {o}=await loadDevs(false);
-  const l=o.filter(x=>x.deviceId&&x.deviceId!=="communications");
+  const l=o.filter(x=>x.deviceId&&!BADID.includes(x.deviceId));
   if(l.length<2)return toast("Hanya ada satu perangkat keluaran suara yang terdeteksi.");
-  const cur=S.out||"default";let i=l.findIndex(x=>x.deviceId===cur);i=(i+1)%l.length;
-  S.out=l[i].deviceId==="default"?"":l[i].deviceId;saveS();applyOut();
+  let i=l.findIndex(x=>x.deviceId===effOut());i=(i+1)%l.length;
+  S.out=l[i].deviceId;saveS();applyOut();
   toast("🔊 "+(l[i].label||"Perangkat "+(i+1)));
 }
 

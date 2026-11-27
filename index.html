@@ -66,7 +66,7 @@
       <div class="opt"><label class="sp" for="s-snd">Suara pesan &amp; undangan</label><button class="g s" onclick="ding()">Coba</button><input type="checkbox" id="s-snd" onchange="chg()"></div>
       <div class="opt"><label class="sp" for="s-ring">Nada dering &amp; nada panggil</label><button class="g s" onclick="ringTest()">Coba</button><input type="checkbox" id="s-ring" onchange="chg()"></div>
       <div class="opt"><label class="sp" for="s-tone">Pilihan nada dering</label><select id="s-tone" onchange="chg();ringTest()"></select></div>
-      <div class="opt"><label class="sp" for="s-out">Keluaran suara (headset/speaker)</label><select id="s-out" onchange="chg();ding()"></select></div>
+      <div class="opt"><label class="sp" for="s-out">Keluaran suara (otomatis ikut headset)</label><select id="s-out" onchange="chg();ding()"></select></div>
       <div class="opt"><label class="sp" for="s-mic">Mikrofon</label><select id="s-mic" onchange="chg()"></select></div>
       <div class="opt"><span class="mu sp" id="dv-note"></span><button class="g s" onclick="fillDevs(true)">Muat daftar perangkat</button></div>
       <div class="opt"><label class="sp" for="s-vol">Volume</label><input type="range" id="s-vol" min="10" max="100" step="5" oninput="chg()" style="width:50%"></div>
