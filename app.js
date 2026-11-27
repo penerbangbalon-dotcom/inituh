@@ -23,7 +23,7 @@ async function auth(){
 }
 sb.auth.onAuthStateChange((_e,s)=>{
   if(s?.user){if(me?.id!==s.user.id){me=s.user;setTimeout(boot,0)}}
-  else{me=prof=peer=null;if(ch)sb.removeChannel(ch);if(typeof endInc==="function")endInc();show(true)}
+  else{me=prof=peer=null;if(ch)sb.removeChannel(ch);if(typeof resetCall==="function")resetCall();show(true)}
 });
 async function boot(){
   let {data,error:e0}=await sb.from("profiles").select("*").eq("id",me.id).maybeSingle();
@@ -33,6 +33,7 @@ async function boot(){
   if(!data)toast("Profil belum lengkap. Jalankan perbaikan-profil.sql di Supabase.");
   P[me.id]=prof;show(false);
   ch=sb.channel("rt").on("postgres_changes",{event:"*",schema:"public",table:"messages"},p=>{onMsg(p);refresh()}).on("postgres_changes",{event:"*",schema:"public",table:"friendships"},p=>{onFriend(p);refresh()}).subscribe();
+  if(typeof initCalls==="function")initCalls();
   refresh();
 }
 
@@ -168,11 +169,6 @@ async function send(){
   const i=$("#mi"),body=i.value.trim();if(!body)return;i.value="";
   const {error}=await sb.from("messages").insert({sender:me.id,recipient:peer,body});
   if(error){i.value=body;return toast("Gagal mengirim: "+error.message)}refresh();
-}
-function call(){
-  const url="https://meet.jit.si/orbit-"+crypto.randomUUID().replace(/-/g,"").slice(0,14);
-  window.open(url,"_blank");toast("Memanggil "+nm(peer)+"…");
-  sb.from("messages").insert({sender:me.id,recipient:peer,body:"📞 Ajakan panggilan, ketuk untuk bergabung: "+url}).then(()=>refresh());
 }
 async function block(){
   if(!confirm("Blokir "+nm(peer)+"? Kalian tidak bisa saling mengirim pesan."))return;

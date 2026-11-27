@@ -39,7 +39,8 @@
       <div class="top">
         <button class="i back" onclick="back()">←</button>
         <div id="ca"></div><span class="sp ell" id="ct"></span>
-        <button class="i" onclick="call()" title="Panggilan">📞</button>
+        <button class="i" onclick="startCall(false)" title="Panggilan suara">📞</button>
+        <button class="i" onclick="startCall(true)" title="Panggilan video">🎥</button>
         <button class="i" onclick="report()" title="Laporkan">⚑</button>
         <button class="i" onclick="block()" title="Blokir">⛔</button>
       </div>
@@ -70,17 +71,11 @@
     <div class="mu">Notifikasi berjalan selama Orbit terbuka di browser (boleh di tab lain atau layar terkunci pada sebagian perangkat). Ketuk layar sekali setelah membuka aplikasi agar suara bisa berbunyi. Pengaturan ini tersimpan di perangkat ini saja.</div>
   </div>
 </div>
-<div id="inc" class="ov inc" hidden>
-  <div class="ic">
-    <div class="mu">Panggilan masuk</div>
-    <div id="ica" style="margin:18px 0 10px"></div>
-    <div id="icn" style="font-size:22px;font-weight:700"></div>
-    <div class="mu" style="margin-top:4px">Mengajak kamu menelepon…</div>
-    <div class="row" style="justify-content:center;gap:28px;margin-top:34px">
-      <button class="cb no" onclick="declineCall()" aria-label="Tolak">📵<span>Tolak</span></button>
-      <button class="cb ok" onclick="acceptCall()" aria-label="Terima">📞<span>Terima</span></button>
-    </div>
-  </div>
+<div id="cl" class="ov cl" hidden>
+  <video id="rv" autoplay playsinline></video>
+  <video id="lv" autoplay playsinline muted hidden></video>
+  <div class="ci"><div id="cav"></div><div id="cn"></div><div id="cs"></div></div>
+  <div class="cc" id="cc"></div>
 </div>
 <div id="toast" hidden></div>
 
@@ -88,5 +83,6 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="app.js"></script>
 <script src="notif.js"></script>
+<script src="calls.js"></script>
 </body>
 </html>

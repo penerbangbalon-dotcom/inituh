@@ -31,7 +31,7 @@ function ringStart(){
   go();rt=setInterval(go,T.len*1000);
 }
 function ringStop(){clearInterval(rt);rt=null;try{navigator.vibrate?.(0)}catch{}}
-function ringTest(){if(inc1)return;ringStart();setTimeout(()=>{if(!inc1)ringStop()},3500)}
+function ringTest(){if(typeof CL!=="undefined"&&CL)return;ringStart();setTimeout(()=>{if(!CL)ringStop()},3500)}
 
 /* ----- Notifikasi sistem ----- */
 if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
@@ -65,7 +65,7 @@ async function onMsg(p){
   if(p.eventType!=="INSERT"||!me)return;
   const m=p.new;if(m.recipient!==me.id)return;
   const name=await who(m.sender);
-  if(/^📞 Ajakan panggilan/.test(m.body||"")&&Date.now()-new Date(m.created_at)<45000)return incoming(m,name);
+  if(/^📞 Panggilan (suara|video) ·/.test(m.body||""))return;
   if(peer===m.sender&&!away())return;
   const txt=m.file_path?"📎 "+(m.file_name||"File"):m.body;
   if(S.snd)ding();
@@ -83,24 +83,6 @@ async function onFriend(p){
     if(S.snd)ding();
     if(away())sysNotify("Undangan diterima",name+" menerima permintaan pertemananmu","fr-"+r.addressee);else toast("✅ "+name+" menerima permintaan pertemananmu.");
   }
-}
-
-/* ----- Panggilan masuk ----- */
-let inc1=null,incT=null;
-function incoming(m,name){
-  if(inc1)return;
-  const u=(m.body.match(/https:\/\/meet\.jit\.si\/orbit-\w+/)||[])[0];if(!u)return;
-  inc1={...m,url:u};
-  $("#icn").textContent=name;$("#ica").innerHTML=av(m.sender,"xl");$("#inc").hidden=false;
-  if(S.ring)ringStart();
-  incT=setTimeout(endInc,45000);
-  if(away())sysNotify("📞 Panggilan masuk",name+" mengajakmu menelepon","call-"+m.sender);
-}
-function endInc(){clearTimeout(incT);ringStop();$("#inc").hidden=true;inc1=null}
-function acceptCall(){const c=inc1;if(!c)return;endInc();window.open(c.url,"_blank")}
-function declineCall(){
-  const c=inc1;if(!c)return;endInc();
-  sb.from("messages").insert({sender:me.id,recipient:c.sender,body:"📵 Panggilan ditolak"}).then(()=>refresh());
 }
 
 /* ----- Layar pengaturan ----- */

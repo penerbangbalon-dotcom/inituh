@@ -18,5 +18,6 @@ Setiap kali file di GitHub diubah, Vercel otomatis memperbarui aplikasi.
 ## Fitur notifikasi & pengaturan
 - Tombol ⚙️ di pojok kanan atas daftar obrolan: izin notifikasi, suara pesan, nada dering (3 pilihan), volume.
 - Notifikasi muncul untuk pesan baru, undangan pertemanan, dan penerimaan undangan. Panggilan masuk menampilkan layar Terima/Tolak dengan nada dering.
+- Panggilan suara & video langsung di dalam aplikasi (WebRTC, file `calls.js`), tanpa Jitsi. Penghubung memakai Supabase Realtime. Untuk jaringan yang ketat, isi `TURN` di bagian atas `calls.js`.
 - Bekerja selama Orbit terbuka di browser. Untuk notifikasi saat aplikasi tertutup sepenuhnya, perlu server Web Push (belum ada).
 - File tambahan: `notif.js`. SQL perbaikan: `perbaikan-profil.sql`, `perbaikan-izin.sql`.
