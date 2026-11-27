@@ -192,7 +192,8 @@ async function onSig(p){
     const names=p.names&&typeof p.names==="object"?p.names:{};
     if(!names[p.from])names[p.from]=await who(p.from);
     if(CL)return sig(p.from,{t:"busy"},p.cid);
-    const nc=CL={cid:p.cid,host:p.from,dir:"in",video:!!p.video,members:p.members,names,state:"ring",live:false,pp:{},ib:{},joined:new Set(),st:{}};
+    /* Penelepon sudah ada di panggilan sejak awal, jadi dianggap bergabung (supaya penerima bisa membuat offer bila id-nya lebih kecil) */
+    const nc=CL={cid:p.cid,host:p.from,dir:"in",video:!!p.video,members:p.members,names,state:"ring",live:false,pp:{},ib:{},joined:new Set([p.from]),st:{}};
     (PI[p.cid]||[]).forEach(x=>(nc.ib[x.from]=nc.ib[x.from]||[]).push(x.cand));delete PI[p.cid];
     sig(p.from,{t:"ring"},p.cid);
     showCall();if(S.ring)ringStart();
