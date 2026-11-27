@@ -58,8 +58,10 @@ function draw(side=true){
   $("#me").innerHTML=av(me.id,"sm");document.querySelectorAll("#tabs button").forEach(b=>b.classList.toggle("on",b.dataset.v===view));const n=inc().length;$("#nb").hidden=!n;$("#nb").textContent=n;
   if(side){
     const q=$("#q")?.value||"";
-    $("#main").innerHTML=view==="chat"?vChat():view==="teman"?vTeman():vProf();
+    const kq=$("#kq")?.value||"";
+    $("#main").innerHTML=view==="chat"?vChat():view==="kontak"?vKontak():view==="teman"?vTeman():vProf();
     if(view==="teman"&&$("#q"))$("#q").value=q;
+    if(view==="kontak"&&$("#kq")){$("#kq").value=kq;kfilter()}
     if(view==="prof"&&prof.code)new QRCode($("#qr"),{text:prof.code,width:150,height:150});
   }
   if(peer)fillMsgs();
@@ -69,6 +71,24 @@ function vChat(){
   const l=friends().map(id=>({id,last:M.find(x=>x.sender===id||x.recipient===id),un:M.filter(x=>x.sender===id&&x.recipient===me.id&&!x.read_at).length})).sort((a,b)=>(b.last?.created_at||"").localeCompare(a.last?.created_at||""));
   if(!l.length)return `<div class="card mu">Belum ada teman. Ketuk ➕ lalu masukkan kode atau username temanmu.</div>`;
   return l.map(({id,last,un})=>`<div class="it ${peer===id?"on":""}" onclick="open1('${id}')">${av(id)}<div class="sp"><div class="row"><b class="sp ell">${esc(nm(id))}</b><span class="mu">${last?hm(last.created_at):""}</span></div><div class="row"><span class="mu sp ell">${esc(prev(last))}</span>${un?`<span class="bd">${un}</span>`:""}</div></div></div>`).join("");
+}
+function vKontak(){
+  const l=friends().sort((a,b)=>nm(a).localeCompare(nm(b),"id"));
+  if(!l.length)return `<div class="card mu">Belum ada kontak. Buka tab ➕ Tambah untuk mencari teman dengan kode atau username.</div>`;
+  const rows=l.map(id=>{const p=P[id]||{};return `<div class="it ${peer===id?"on":""}" data-n="${esc((nm(id)+" "+(p.username||"")+" "+(p.code||"")).toLowerCase())}" onclick="open1('${id}')">${av(id)}<div class="sp"><b class="ell" style="display:block">${esc(nm(id))}</b><div class="mu ell">${p.username?"@"+esc(p.username):esc(p.code||"")}</div></div><button class="d s" onclick="event.stopPropagation();hapusTeman('${id}')" title="Hapus dari kontak">Hapus</button></div>`}).join("");
+  return `<div class="card"><input id="kq" placeholder="Cari kontak…" oninput="kfilter()"></div><h3>Kontak (${l.length})</h3>${rows}<div id="kn" class="mu" style="padding:8px" hidden>Tidak ada kontak yang cocok.</div>`;
+}
+function kfilter(){
+  const q=($("#kq")?.value||"").trim().toLowerCase();let n=0;
+  document.querySelectorAll("#main .it[data-n]").forEach(e=>{const ok=!q||e.dataset.n.includes(q);e.hidden=!ok;if(ok)n++});
+  const k=$("#kn");if(k)k.hidden=n>0;
+}
+async function hapusTeman(id){
+  if(!confirm("Hapus "+nm(id)+" dari kontak? Kalian tidak bisa saling mengirim pesan sampai berteman lagi."))return;
+  const fr=F.find(x=>other(x)===id&&x.status==="accepted");if(!fr)return;
+  const {error}=await sb.from("friendships").delete().eq("id",fr.id);
+  if(error)return toast(error.message);
+  if(peer===id)back();toast("Dihapus dari kontak.");refresh();
 }
 function vTeman(){
   let h=`<div class="card"><div class="mu" style="margin-bottom:8px">Cari teman dengan kode atau username (harus persis).</div><div class="row"><input id="q" placeholder="Contoh: K7M3P9XQ" onkeydown="if(event.key==='Enter')cari()"><button onclick="cari()">Cari</button></div>`;
