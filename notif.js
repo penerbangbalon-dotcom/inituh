@@ -3,13 +3,42 @@
 
 /* ----- Pengaturan (disimpan di perangkat ini) ----- */
 const SK="orbit-set";
-let S={notif:true,snd:true,ring:true,vol:.8,tone:"klasik"};
+let S={notif:true,snd:true,ring:true,vol:.8,tone:"klasik",out:"",mic:""};
 try{Object.assign(S,JSON.parse(localStorage.getItem(SK)||"{}"))}catch{}
 const saveS=()=>{try{localStorage.setItem(SK,JSON.stringify(S))}catch{}};
 
 /* ----- Suara (WebAudio, tanpa file) ----- */
 let AC;
-function ac(){try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();if(AC.state==="suspended")AC.resume()}catch{}return AC}
+function ac(){
+  try{
+    if(!AC){AC=new(window.AudioContext||window.webkitAudioContext)();if(S.out&&AC.setSinkId)AC.setSinkId(S.out).catch(()=>{})}
+    if(AC.state==="suspended")AC.resume();
+  }catch{}
+  return AC;
+}
+/* ----- Pilihan perangkat suara (headset/speaker/mikrofon) ----- */
+const canSink=()=>"setSinkId" in HTMLMediaElement.prototype;
+function applyOut(){
+  document.querySelectorAll("#grid video").forEach(v=>v.setSinkId&&v.setSinkId(S.out||"").catch(()=>{}));
+  if(AC?.setSinkId)AC.setSinkId(S.out||"").catch(()=>{});
+}
+async function loadDevs(ask){
+  if(!navigator.mediaDevices?.enumerateDevices)return {o:[],m:[]};
+  let d=await navigator.mediaDevices.enumerateDevices();
+  if(ask&&!d.some(x=>x.label)){
+    try{(await navigator.mediaDevices.getUserMedia({audio:true})).getTracks().forEach(t=>t.stop());d=await navigator.mediaDevices.enumerateDevices()}catch{}
+  }
+  return {o:d.filter(x=>x.kind==="audiooutput"),m:d.filter(x=>x.kind==="audioinput")};
+}
+const devName=(x,i)=>x.label||("Perangkat "+(i+1));
+async function fillDevs(ask){
+  const {o,m}=await loadDevs(ask);
+  const opt=(l,sel)=>l.map((x,i)=>`<option value="${esc(x.deviceId)}"${x.deviceId===sel?" selected":""}>${esc(devName(x,i))}</option>`).join("");
+  $("#s-out").innerHTML=`<option value="">Otomatis (default sistem)</option>`+opt(o.filter(x=>x.deviceId!=="default"),S.out);
+  $("#s-mic").innerHTML=`<option value="">Otomatis (default sistem)</option>`+opt(m.filter(x=>x.deviceId!=="default"),S.mic);
+  $("#s-out").disabled=!canSink();
+  $("#dv-note").textContent=canSink()?(o.length&&!o.some(x=>x.label)?"Ketuk \"Muat daftar perangkat\" dan izinkan mikrofon agar nama perangkat tampil.":""):"Browser ini tidak bisa memilih keluaran suara; ganti lewat pengaturan perangkat/Bluetooth.";
+}
 ["pointerdown","keydown","touchstart"].forEach(e=>addEventListener(e,()=>ac(),{passive:true}));
 function tone(f,at,d,type="sine",v=1){
   const c=ac();if(!c)return;
@@ -119,10 +148,12 @@ function setOpen(v){
   $("#nbtn").hidden=!("Notification" in window)||Notification.permission==="granted";
   $("#s-notif").checked=S.notif;$("#s-snd").checked=S.snd;$("#s-ring").checked=S.ring;
   $("#s-vol").value=Math.round(S.vol*100);
+  fillDevs(false);
   const sel=$("#s-tone");sel.innerHTML=Object.entries(TONES).map(([k,t])=>`<option value="${k}">${t.n}</option>`).join("");sel.value=S.tone;
 }
 function chg(){
   S.notif=$("#s-notif").checked;S.snd=$("#s-snd").checked;S.ring=$("#s-ring").checked;
   S.vol=Math.max(.1,Math.min(1,$("#s-vol").value/100));S.tone=$("#s-tone").value;
+  S.out=$("#s-out").value;S.mic=$("#s-mic").value;applyOut();
   saveS();
 }

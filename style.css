@@ -76,3 +76,4 @@ select{font:inherit;padding:8px 10px;border:1px solid var(--bd);border-radius:10
 .ci #cn{font-weight:700;font-size:17px}.ci #cs{font-size:14px;color:#aebac1}
 .cc{position:absolute;left:0;right:0;bottom:4vh;display:flex;justify-content:center;gap:22px;z-index:5}
 .cb.mt{background:#2a3942;color:#e9edef}.cb.mt.on{background:#e9edef;color:#111}
+@media(max-width:420px){.cb{width:68px;height:68px;font-size:24px}.cc{gap:12px}}

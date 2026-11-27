@@ -71,6 +71,7 @@ function sig(to,p,cid){
 /* ----- Media & koneksi ----- */
 async function getMedia(video){
   const a={echoCancellation:true,noiseSuppression:true};
+  if(S.mic)a.deviceId={ideal:S.mic};
   try{return await navigator.mediaDevices.getUserMedia({audio:a,video:video?{facingMode:"user",width:{ideal:640}}:false})}
   catch(e){if(video){try{return await navigator.mediaDevices.getUserMedia({audio:a})}catch{}}throw e}
 }
@@ -92,7 +93,7 @@ function mkPeer(c,id){
     const s=pc.connectionState;
     if(s==="connected"){
       pr.state="conn";clearTimeout(pr.dt);c.st[id]="joined";
-      if(!c.t0){c.t0=Date.now();clearInterval(c.tk);c.tk=setInterval(tick,1000)}
+      if(!c.t0){c.t0=Date.now();clearInterval(c.tk);c.tk=setInterval(tick,1000);if(S.ring)connBeep()}
       c.state="conn";clearTimeout(c.to);showCall();
     }else if(s==="failed")closePeer(c,id,"failed");
     else if(s==="disconnected"){clearTimeout(pr.dt);pr.dt=setTimeout(()=>{if(pc.connectionState!=="connected")closePeer(c,id,"failed")},8000)}
@@ -157,12 +158,13 @@ async function startCall(video,ids){
   if(!ids.length)return;
   if(!navigator.mediaDevices?.getUserMedia||!window.RTCPeerConnection)return toast("Browser ini belum mendukung panggilan (butuh HTTPS).");
   ac();
+  if(S.ring){dialBeep();rbStart()}
   const names={[me.id]:prof.display_name};ids.forEach(id=>names[id]=nm(id));
   const c=CL={cid:crypto.randomUUID(),host:me.id,dir:"out",video,members:[me.id,...ids],names,state:"ring",live:true,pp:{},ib:{},joined:new Set(),st:{}};
   ids.forEach(id=>c.st[id]="calling");
   showCall();
   try{c.stream=await getMedia(video)}
-  catch(e){CL=null;showCall();return toast("Tidak bisa memakai mikrofon/kamera. Izinkan aksesnya di browser.")}
+  catch(e){rbStop();CL=null;showCall();return toast("Tidak bisa memakai mikrofon/kamera. Izinkan aksesnya di browser.")}
   await loadIce();
   if(CL!==c){c.stream.getTracks().forEach(t=>t.stop());return}
   $("#lv").srcObject=c.stream;$("#lv").hidden=!c.stream.getVideoTracks().length;
@@ -173,7 +175,6 @@ async function startCall(video,ids){
     if(fail===ids.length&&CL===c){toast("Panggilan gagal dikirim: "+sigErr+(/call_signals/.test(sigErr)?" — jalankan perbaikan-panggilan.sql di Supabase.":""));finish(c,"error")}
     else renderTiles();
   }));
-  rbStart();
   c.slowT=setTimeout(()=>{if(CL===c&&c.state==="ring"&&!others(c).some(id=>c.st[id]==="ringing")){c.slow=true;showCall()}},10000);
   c.to=setTimeout(()=>{
     if(CL!==c)return;
@@ -258,6 +259,7 @@ function finish(c,why){
   const dur=c.t0?Date.now()-c.t0:0;
   if(CL===c)CL=null;
   showCall();
+  if(why!=="error"&&why!=="cancel"&&S.ring&&(dur||c.dir==="out"))endBeep();
   const msg={declined:"Panggilan ditolak",noanswer:"Tidak dijawab",busy:"Sedang dalam panggilan lain",failed:c.t0||hasTurn()?"Koneksi panggilan terputus":"Koneksi suara gagal: jaringan kalian butuh server TURN (lihat config.js).",end:dur?"Panggilan selesai · "+fmt(dur):""}[why];
   if(msg)toast(msg);
   if(c.dir==="out"&&c.members.length===2){
@@ -267,7 +269,10 @@ function finish(c,why){
 }
 
 /* ----- Nada tunggu untuk penelepon ----- */
-function rbStart(){rbStop();const go=()=>{tone(425,0,1,"sine",.5);tone(450,0,1,"sine",.5)};go();rb=setInterval(go,3500)}
+function rbStart(){if(!S.ring)return;rbStop();const go=()=>{tone(425,0,.9,"sine",1);tone(450,0,.9,"sine",1)};setTimeout(go,350);rb=setInterval(go,3000)}
+const dialBeep=()=>{tone(523,0,.1,"triangle");tone(784,.12,.16,"triangle")};
+const connBeep=()=>{tone(660,0,.1,"sine");tone(880,.11,.16,"sine")};
+const endBeep=()=>{tone(494,0,.16,"sine");tone(370,.18,.28,"sine")};
 function rbStop(){clearInterval(rb);rb=null}
 
 /* ----- Layar panggilan ----- */
@@ -288,6 +293,7 @@ function renderTiles(){
     let t=[...gr.children].find(x=>x.dataset.id===id);
     if(!t){t=document.createElement("div");t.className="tile";t.dataset.id=id;t.innerHTML='<video autoplay playsinline></video><div class="tc"><div class="ta"></div><div class="tn"></div><div class="ts"></div></div>';gr.appendChild(t)}
     const pr=c.pp[id],v=t.querySelector("video");
+    if(!v.dataset.sk){v.dataset.sk=1;if(S.out&&v.setSinkId)v.setSinkId(S.out).catch(()=>{})}
     if(pr?.rs){if(v.srcObject!==pr.rs){v.srcObject=pr.rs;v.play?.().catch(()=>{})}}else if(v.srcObject)v.srcObject=null;
     t.classList.toggle("v",!!(pr?.hasV&&pr.state==="conn"));
     t.querySelector(".ta").innerHTML=avx(id,ids.length>2?"":"xl");
@@ -307,8 +313,18 @@ function showCall(){
   const hasCam=!!c.stream?.getVideoTracks().length;
   $("#cc").innerHTML=ringIn
     ?`<button class="cb no" onclick="declineCall()" aria-label="Tolak">📵<span>Tolak</span></button><button class="cb ok" onclick="acceptCall()" aria-label="Terima">${c.video?"🎥":"📞"}<span>Terima</span></button>`
-    :`<button class="cb mt ${c.muted?"on":""}" onclick="togMute()" aria-label="Mikrofon">${c.muted?"🔇":"🎤"}<span>Mikrofon</span></button>${hasCam?`<button class="cb mt ${c.camoff?"on":""}" onclick="togCam()" aria-label="Kamera">📷<span>Kamera</span></button>`:""}<button class="cb no" onclick="hangup()" aria-label="Akhiri">📵<span>Akhiri</span></button>`;
+    :`<button class="cb mt ${c.muted?"on":""}" onclick="togMute()" aria-label="Mikrofon">${c.muted?"🔇":"🎤"}<span>Mikrofon</span></button>${hasCam?`<button class="cb mt ${c.camoff?"on":""}" onclick="togCam()" aria-label="Kamera">📷<span>Kamera</span></button>`:""}${canSink()?`<button class="cb mt" onclick="cycOut()" aria-label="Ganti keluaran suara">🎧<span>Suara</span></button>`:""}<button class="cb no" onclick="hangup()" aria-label="Akhiri">📵<span>Akhiri</span></button>`;
   renderTiles();
+}
+
+/* Ganti keluaran suara saat panggilan (speaker -> headset -> ...), satu ketukan satu perangkat */
+async function cycOut(){
+  const {o}=await loadDevs(false);
+  const l=o.filter(x=>x.deviceId&&x.deviceId!=="communications");
+  if(l.length<2)return toast("Hanya ada satu perangkat keluaran suara yang terdeteksi.");
+  const cur=S.out||"default";let i=l.findIndex(x=>x.deviceId===cur);i=(i+1)%l.length;
+  S.out=l[i].deviceId==="default"?"":l[i].deviceId;saveS();applyOut();
+  toast("🔊 "+(l[i].label||"Perangkat "+(i+1)));
 }
 
 /* ----- Pilih peserta panggilan grup ----- */
