@@ -19,7 +19,7 @@ Setiap kali file di GitHub diubah, Vercel otomatis memperbarui aplikasi.
 - Tombol ⚙️ di pojok kanan atas daftar obrolan: izin notifikasi, suara pesan, nada dering (3 pilihan), volume.
 - Notifikasi muncul untuk pesan baru, undangan pertemanan, dan penerimaan undangan. Panggilan masuk menampilkan layar Terima/Tolak dengan nada dering.
 - Panggilan suara & video langsung di dalam aplikasi (WebRTC, file `calls.js`), tanpa Jitsi. Penghubung memakai tabel `call_signals` + Supabase Realtime (**jalankan `perbaikan-panggilan.sql` dulu**). Untuk jaringan yang ketat, isi `TURN` di bagian atas `calls.js`.
-- Bekerja selama Orbit terbuka di browser. Untuk notifikasi saat aplikasi tertutup sepenuhnya, perlu server Web Push (belum ada).
+- Notifikasi saat aplikasi tertutup memakai Web Push (lihat bagian di bawah).
 - File tambahan: `notif.js`. SQL perbaikan: `perbaikan-profil.sql`, `perbaikan-izin.sql`.
 
 ## Panggilan grup & cadangan notifikasi
@@ -36,3 +36,18 @@ Perlu 3 langkah satu kali:
 2. **Supabase** > SQL Editor: tempel `perbaikan-push.sql`, ganti `v_url` dan `v_secret`, Run.
 3. Buka Orbit di tiap perangkat, Pengaturan > Aktifkan notifikasi.
 Di iPhone, Orbit harus dipasang dulu ke Layar Utama (Bagikan > Tambah ke Layar Utama).
+
+## Cek & uji notifikasi (jika belum muncul saat aplikasi ditutup)
+1. Buka `https://ALAMAT-VERCEL-ANDA/api/push` di browser: semua nilai harus `true` (terutama `pasangan_kunci_cocok` dan `supabase_terhubung`). `VAPID_SUBJECT` yang salah ketik (mis. `mailtoxxx@gmail.com`) kini diperbaiki otomatis.
+2. Di HP yang akan diuji: Pengaturan > Aktifkan > **Uji notifikasi**. Hasilnya menyebut berapa perangkat yang menerima, atau kode galat dari layanan push.
+3. Bila "tidak menemukan perangkat terdaftar": jalankan `perbaikan-push.sql`, lalu `diagnosa-push.sql` (blok 1-3) di Supabase.
+Hemat daya Android: pada HP tertentu (Xiaomi, Oppo, Vivo, Samsung) setel baterai Chrome/Orbit ke "Tanpa batasan".
+
+## Pesan suara
+Tombol mikrofon di sebelah kolom pesan (muncul saat kolom kosong): ketuk untuk merekam, ikon tempat sampah untuk batal, panah hijau untuk kirim. Disimpan di bucket `files` (tidak perlu SQL baru). Rekaman Android/Chrome berformat WebM, iPhone M4A; iPhone lama (di bawah iOS 18.4) belum bisa memutar WebM.
+
+## APK Android
+Folder `android/` adalah pembungkus TWA (Chrome) untuk `orbit-obrolan.vercel.app`; notifikasi tetap lewat Web Push.
+1. Unggah SEMUA isi folder ini ke GitHub (termasuk `.github`, `.well-known`, `android`, `vercel.json`), tunggu Vercel selesai deploy.
+2. GitHub > tab **Actions** > **Bangun APK Orbit** > Run workflow. Sekitar 5 menit kemudian APK ada di **Releases > Orbit APK terbaru** (unduh dari HP, izinkan "pasang dari sumber ini").
+3. `.well-known/assetlinks.json` berisi sidik jari kunci tanda tangan `android/orbit.jks`; ini yang membuat aplikasi tampil layar penuh tanpa bilah alamat. Jika kunci diganti, perbarui sidik jarinya.

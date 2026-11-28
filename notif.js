@@ -3,9 +3,11 @@
 
 /* ----- Pengaturan (disimpan di perangkat ini) ----- */
 const SK="orbit-set";
-let S={notif:true,snd:true,ring:true,vol:.8,tone:"klasik",out:"",mic:""};
+let S={notif:true,snd:true,ring:true,vol:.8,tone:"klasik",out:"",mic:"",theme:"dark"};
 try{Object.assign(S,JSON.parse(localStorage.getItem(SK)||"{}"))}catch{}
 const saveS=()=>{try{localStorage.setItem(SK,JSON.stringify(S))}catch{}};
+const applyTheme=()=>{document.documentElement.dataset.theme=S.theme||"dark";document.querySelector('meta[name=theme-color]')?.setAttribute("content",S.theme==="light"?"#ffffff":"#161717")};
+applyTheme();
 
 /* ----- Suara (WebAudio, tanpa file) ----- */
 let AC;
@@ -83,16 +85,47 @@ function ringTest(){if(typeof CL!=="undefined"&&CL)return;ringStart();setTimeout
 
 /* ----- Web Push: notifikasi tetap muncul saat aplikasi tertutup (butuh server, lihat README) ----- */
 const b64u=s=>{const r=(s+"=".repeat((4-s.length%4)%4)).replace(/-/g,"+").replace(/_/g,"/"),a=atob(r);return Uint8Array.from(a,c=>c.charCodeAt(0))};
+let PS={ok:false,msg:"Server notifikasi: belum dicek"};
+const sameKey=(sub)=>{try{const k=sub.options?.applicationServerKey;if(!k)return true;const a=new Uint8Array(k),b=b64u(window.ORBIT_VAPID);return a.length===b.length&&a.every((v,i)=>v===b[i])}catch{return true}};
 async function subscribePush(){
   try{
-    if(!me||!window.ORBIT_VAPID||!("PushManager" in window)||!("serviceWorker" in navigator)||!("Notification" in window)||Notification.permission!=="granted")return;
+    if(!me||!window.ORBIT_VAPID||!("PushManager" in window)||!("serviceWorker" in navigator)||!("Notification" in window)||Notification.permission!=="granted"){PS={ok:false,msg:"Notifikasi belum aktif di perangkat ini"};return PS}
     const reg=await navigator.serviceWorker.ready;
     let sub=await reg.pushManager.getSubscription();
+    /* langganan lama dengan kunci berbeda tidak akan pernah menerima kiriman: buat ulang */
+    if(sub&&!sameKey(sub)){await sub.unsubscribe();sub=null}
     if(!sub)sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64u(window.ORBIT_VAPID)});
     const j=sub.toJSON();
     const {error}=await sb.rpc("save_push_sub",{p_endpoint:j.endpoint,p_p256dh:j.keys.p256dh,p_auth:j.keys.auth});
-    if(error)console.warn("simpan langganan push gagal",error.message);
-  }catch(e){console.warn("push",e)}
+    if(error){PS={ok:false,msg:"Gagal menyimpan langganan: "+error.message};console.warn(PS.msg);return PS}
+    PS={ok:true,msg:"Perangkat terdaftar di server notifikasi ✓"};
+  }catch(e){PS={ok:false,msg:"Gagal mendaftar push: "+(e.message||e)};console.warn("push",e)}
+  return PS;
+}
+/* Uji lewat server: Vercel mengirim notifikasi sungguhan ke semua perangkat akun ini */
+async function pushTest(){
+  const set=t=>{const e=$("#ps");if(e)e.textContent=t};
+  set("Menguji…");
+  if(!("Notification" in window)||Notification.permission!=="granted")return set("Izinkan notifikasi dulu (tombol Aktifkan).");
+  const r=await subscribePush();if(!r.ok)return set(r.msg);
+  try{
+    const {data:{session}}=await sb.auth.getSession();
+    const res=await fetch("/api/push",{method:"POST",headers:{"Content-Type":"application/json",Authorization:"Bearer "+session.access_token},body:JSON.stringify({test:true})});
+    const j=await res.json().catch(()=>({}));
+    if(!res.ok)return set("Server menolak ("+res.status+"): "+(j.error||"cek Environment Variables Vercel"));
+    if(!j.devices)return set("Server tidak menemukan perangkat terdaftar untuk akunmu.");
+    if(j.sent)return set("Terkirim ke "+j.sent+" dari "+j.devices+" perangkat. Notifikasi harus muncul beberapa detik lagi.");
+    const f=j.results?.[0];set("Gagal kirim ("+(f?.status||"?")+"): "+(f?.error||"tidak diketahui"));
+  }catch(e){set("Gagal menghubungi server: "+e.message)}
+}
+navigator.serviceWorker?.addEventListener("message",e=>{if(e.data?.t==="resub")subscribePush()});
+document.addEventListener("visibilitychange",()=>{if(!document.hidden&&me)subscribePush()});
+/* Ajakan mengaktifkan notifikasi bila belum diizinkan */
+function notifBanner(){
+  const b=$("#nbn");if(!b)return;
+  const need="Notification" in window&&Notification.permission!=="granted";
+  b.hidden=!need;
+  if(need)b.innerHTML=Notification.permission==="denied"?`<span class="sp">Notifikasi diblokir. Izinkan lewat ikon gembok/pengaturan situs, lalu muat ulang.</span>`:`<span class="sp">Aktifkan notifikasi agar pesan & panggilan masuk walau Orbit ditutup.</span><button onclick="askPerm()">Aktifkan</button>`;
 }
 
 /* ----- Notifikasi sistem ----- */
@@ -106,7 +139,7 @@ async function sysNotify(title,body,tag){
 async function askPerm(){
   if(!("Notification" in window))return toast("Browser ini tidak mendukung notifikasi.");
   const r=await Notification.requestPermission();
-  setOpen(true);if(r==="granted")subscribePush();
+  if(r==="granted")await subscribePush();notifBanner();if(!$("#set").hidden)setOpen(true);
   if(r!=="granted")toast("Izin ditolak. Aktifkan lewat ikon gembok di kolom alamat browser.");
 }
 const away=()=>document.hidden||!document.hasFocus();
@@ -119,7 +152,7 @@ async function who(id){
 function badge(){
   if(!me)return;
   const n=M.filter(x=>x.recipient===me.id&&!x.read_at).length+inc().length;
-  document.title=n?`(${n}) Orbit`:"Orbit";
+  document.title=n?`(${n}) Orbit`:"Orbit";notifBanner();try{navigator.setAppBadge?.(n)}catch{}
 }
 
 /* ----- Pesan & undangan: lewat Realtime, dengan pengecekan berkala sebagai cadangan ----- */
@@ -130,7 +163,7 @@ async function notifyMsg(m){
   const name=await who(m.sender);
   if(/^📞 Panggilan (suara|video) ·/.test(m.body||""))return;
   if(peer===m.sender&&!away())return;
-  const txt=m.file_path?"📎 "+(m.file_name||"File"):m.body;
+  const txt=lbl(m);
   if(S.snd)ding();
   if(away())sysNotify(name,txt,"msg-"+m.sender);else toast("💬 "+name+": "+txt);
 }
@@ -180,13 +213,13 @@ function setOpen(v){
   $("#ns").textContent=permText();
   $("#nbtn").hidden=!("Notification" in window)||Notification.permission==="granted";
   $("#s-notif").checked=S.notif;$("#s-snd").checked=S.snd;$("#s-ring").checked=S.ring;
-  $("#s-vol").value=Math.round(S.vol*100);
+  $("#s-vol").value=Math.round(S.vol*100);$("#s-theme").value=S.theme||"dark";$("#ps").textContent=PS.msg;
   fillDevs(false);
   const sel=$("#s-tone");sel.innerHTML=Object.entries(TONES).map(([k,t])=>`<option value="${k}">${t.n}</option>`).join("");sel.value=S.tone;
 }
 function chg(){
   S.notif=$("#s-notif").checked;S.snd=$("#s-snd").checked;S.ring=$("#s-ring").checked;
   S.vol=Math.max(.1,Math.min(1,$("#s-vol").value/100));S.tone=$("#s-tone").value;
-  S.out=$("#s-out").value;S.mic=$("#s-mic").value;applyOut();
+  S.out=$("#s-out").value;S.mic=$("#s-mic").value;S.theme=$("#s-theme").value;applyTheme();applyOut();
   saveS();
 }

@@ -3,14 +3,17 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#008069">
+<meta name="theme-color" content="#161717">
 <title>Orbit</title>
 <link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" href="favicon.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="stylesheet" href="style.css">
+<script>try{document.documentElement.dataset.theme=JSON.parse(localStorage.getItem("orbit-set")||"{}").theme||"dark"}catch{document.documentElement.dataset.theme="dark"}</script>
 </head>
 <body>
 <div id="auth" class="f" hidden>
+  <img src="icon-192.png" alt="Orbit" class="logo">
   <h1>Orbit</h1>
   <div class="mu" id="am">Masuk untuk mulai mengobrol.</div>
   <input id="nm" placeholder="Nama tampilan" hidden>
@@ -21,49 +24,75 @@
 </div>
 
 <div id="app" hidden>
+  <nav id="tabs">
+    <button data-v="chat" onclick="go('chat')" title="Obrolan"><i data-ic="chat"></i><span>Obrolan</span><b class="bd" id="ub" hidden></b></button>
+    <button data-v="kontak" onclick="go('kontak')" title="Kontak"><i data-ic="people"></i><span>Kontak</span></button>
+    <button data-v="teman" onclick="go('teman')" title="Tambah teman"><i data-ic="padd"></i><span>Tambah</span><b class="bd" id="nb" hidden></b></button>
+    <span class="grow"></span>
+    <button class="rs" onclick="setOpen(true)" title="Pengaturan"><i data-ic="gear"></i><span>Setelan</span></button>
+    <button data-v="prof" class="rp" onclick="go('prof')" title="Profil"><span id="me"></span></button>
+  </nav>
   <div class="side">
     <div class="top">
-      <div id="me" onclick="go('prof')" style="cursor:pointer"></div>
-      <span class="sp">Orbit</span>
-      <button class="i" onclick="setOpen(true)" title="Pengaturan" aria-label="Pengaturan">⚙️</button>
+      <h2 class="sp" id="ttl">Obrolan</h2>
+      <button class="i" onclick="setOpen(true)" title="Menu" aria-label="Menu"><i data-ic="more"></i></button>
+      <button class="fab" onclick="go('teman')" title="Obrolan baru" aria-label="Obrolan baru"><i data-ic="newchat"></i></button>
+    </div>
+    <div id="nbn" class="nbn" hidden></div>
+    <div id="sx">
+      <div class="sbar"><i data-ic="search"></i><input id="gq" placeholder="Cari atau mulai obrolan baru" oninput="draw(true)" autocomplete="off"></div>
+      <div class="chips" id="chips">
+        <button data-c="all" class="on" onclick="setChip('all')">Semua</button>
+        <button data-c="unread" onclick="setChip('unread')">Belum dibaca</button>
+        <button data-c="fav" onclick="setChip('fav')">Favorit</button>
+      </div>
     </div>
     <div class="body" id="main"></div>
-    <nav id="tabs">
-      <button data-v="chat" onclick="go('chat')">💬<span>Chat</span></button>
-      <button data-v="kontak" onclick="go('kontak')">👥<span>Kontak</span></button>
-      <button data-v="teman" onclick="go('teman')">➕<span>Tambah</span><b class="bd" id="nb" hidden></b></button>
-      <button data-v="prof" onclick="go('prof')">👤<span>Profil</span></button>
-    </nav>
   </div>
   <div class="pane">
-    <div id="ph" class="ph">Pilih obrolan untuk mulai mengobrol</div>
+    <div id="ph" class="ph"><img src="icon-192.png" alt="" class="logo"><div>Orbit</div><div class="mu">Pilih obrolan untuk mulai mengobrol</div></div>
     <div id="cv" class="cv" hidden>
       <div class="top">
-        <button class="i back" onclick="back()">←</button>
+        <button class="i back" onclick="back()" aria-label="Kembali"><i data-ic="back"></i></button>
         <div id="ca"></div><span class="sp ell" id="ct"></span>
-        <button class="i" onclick="startCall(false)" title="Panggilan suara">📞</button>
-        <button class="i" onclick="startCall(true)" title="Panggilan video">🎥</button>
-        <button class="i" onclick="report()" title="Laporkan">⚑</button>
-        <button class="i" onclick="block()" title="Blokir">⛔</button>
+        <button class="i" onclick="startCall(true)" title="Panggilan video"><i data-ic="video"></i></button>
+        <button class="i" onclick="startCall(false)" title="Panggilan suara"><i data-ic="phone"></i></button>
+        <button class="i" onclick="$('#cm').hidden=!$('#cm').hidden" title="Menu"><i data-ic="more"></i></button>
+        <div id="cm" class="pop" hidden onclick="this.hidden=true">
+          <button onclick="togFav(peer)" id="cmf">Tambah ke favorit</button>
+          <button onclick="report()">Laporkan</button>
+          <button onclick="block()" class="rd">Blokir</button>
+        </div>
       </div>
       <div id="msgs"></div>
-      <div class="bar">
-        <button class="i" onclick="$('#fi').click()" title="Kirim file">📎</button>
-        <input type="file" id="fi" hidden onchange="upl(this)">
-        <input id="mi" placeholder="Ketik pesan" maxlength="2000" onkeydown="if(event.key==='Enter')send()">
-        <button onclick="send()">Kirim</button>
+      <div class="bar" id="bar">
+        <div class="nrm">
+          <button class="i" onclick="$('#fi').click()" title="Lampirkan file" aria-label="Lampirkan"><i data-ic="clip"></i></button>
+          <input type="file" id="fi" hidden onchange="upl(this)">
+          <input id="mi" placeholder="Ketik pesan" maxlength="2000" autocomplete="off" oninput="barSync()" onkeydown="if(event.key==='Enter')send()">
+          <button class="rb" id="mic" onclick="recStart()" aria-label="Rekam pesan suara"><i data-ic="mic"></i></button>
+          <button class="rb" id="snd" onclick="send()" aria-label="Kirim" hidden><i data-ic="send"></i></button>
+        </div>
+        <div class="rcd" hidden>
+          <button class="i" onclick="recStop(false)" aria-label="Batalkan" title="Batalkan"><i data-ic="trash"></i></button>
+          <span class="dot"></span><span id="rt" class="rtm">0:00</span>
+          <div id="lvl" class="lvl"></div>
+          <button class="rb" onclick="recStop(true)" aria-label="Kirim pesan suara"><i data-ic="send"></i></button>
+        </div>
       </div>
     </div>
   </div>
 </div>
 <div id="set" class="ov" hidden onclick="if(event.target===this)setOpen(false)">
   <div class="sheet">
-    <div class="row" style="margin-bottom:10px"><b class="sp" style="font-size:18px">Pengaturan</b><button class="i" onclick="setOpen(false)" aria-label="Tutup">✕</button></div>
+    <div class="row" style="margin-bottom:10px"><b class="sp" style="font-size:18px">Pengaturan</b><button class="i" onclick="setOpen(false)" aria-label="Tutup"><i data-ic="close"></i></button></div>
     <div class="card">
       <div class="mu">Notifikasi di perangkat</div>
       <div class="row" style="margin-top:6px"><span class="sp" id="ns"></span><button class="s" id="nbtn" onclick="askPerm()">Aktifkan</button></div>
+      <div class="row" style="margin-top:8px"><span class="sp mu" id="ps">Server notifikasi: belum dicek</span><button class="g s" onclick="pushTest()">Uji notifikasi</button></div>
     </div>
     <div class="card">
+      <div class="opt"><label class="sp" for="s-theme">Tema</label><select id="s-theme" onchange="chg()"><option value="dark">Gelap</option><option value="light">Terang</option><option value="auto">Ikuti perangkat</option></select></div>
       <div class="opt"><label class="sp" for="s-notif">Notifikasi pesan &amp; undangan teman</label><input type="checkbox" id="s-notif" onchange="chg()"></div>
       <div class="opt"><label class="sp" for="s-snd">Suara pesan &amp; undangan</label><button class="g s" onclick="ding()">Coba</button><input type="checkbox" id="s-snd" onchange="chg()"></div>
       <div class="opt"><label class="sp" for="s-ring">Nada dering &amp; nada panggil</label><button class="g s" onclick="ringTest()">Coba</button><input type="checkbox" id="s-ring" onchange="chg()"></div>
@@ -73,7 +102,7 @@
       <div class="opt"><span class="mu sp" id="dv-note"></span><button class="g s" onclick="fillDevs(true)">Muat daftar perangkat</button></div>
       <div class="opt"><label class="sp" for="s-vol">Volume</label><input type="range" id="s-vol" min="10" max="100" step="5" oninput="chg()" style="width:50%"></div>
     </div>
-    <div class="mu">Notifikasi berjalan selama Orbit terbuka di browser (boleh di tab lain atau layar terkunci pada sebagian perangkat). Ketuk layar sekali setelah membuka aplikasi agar suara bisa berbunyi. Pengaturan ini tersimpan di perangkat ini saja.</div>
+    <div class="mu">Agar notifikasi muncul saat Orbit ditutup, izinkan notifikasi lalu ketuk "Uji notifikasi" sampai berhasil. Pengaturan ini tersimpan di perangkat ini saja.</div>
   </div>
 </div>
 <div id="cl" class="ov cl" hidden>
@@ -84,13 +113,13 @@
 </div>
 <div id="op" class="ov top" hidden onclick="if(event.target===this)this.hidden=true">
   <div class="sheet">
-    <div class="row" style="margin-bottom:8px"><b class="sp" style="font-size:18px">Keluaran suara</b><button class="i" onclick="$('#op').hidden=true" aria-label="Tutup">✕</button></div>
+    <div class="row" style="margin-bottom:8px"><b class="sp" style="font-size:18px">Keluaran suara</b><button class="i" onclick="$('#op').hidden=true" aria-label="Tutup"><i data-ic="close"></i></button></div>
     <div id="ol" class="od"></div>
   </div>
 </div>
 <div id="gp" class="ov" hidden onclick="if(event.target===this)gpClose()">
   <div class="sheet">
-    <div class="row" style="margin-bottom:8px"><b class="sp" style="font-size:18px">Panggilan grup</b><button class="i" onclick="gpClose()" aria-label="Tutup">✕</button></div>
+    <div class="row" style="margin-bottom:8px"><b class="sp" style="font-size:18px">Panggilan grup</b><button class="i" onclick="gpClose()" aria-label="Tutup"><i data-ic="close"></i></button></div>
     <div class="mu" style="margin-bottom:8px">Pilih sampai 4 teman (maks. 5 orang termasuk kamu).</div>
     <div id="gl"></div>
     <div class="row" style="margin-top:12px"><button class="sp" onclick="startGroup(false)">📞 Suara</button><button class="sp" onclick="startGroup(true)">🎥 Video</button></div>

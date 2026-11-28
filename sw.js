@@ -14,11 +14,14 @@ self.addEventListener("notificationclick", e => {
 
 self.addEventListener("push", e => {
   let d = {};
-  try { d = e.data ? e.data.json() : {}; } catch {}
+  try { d = e.data ? e.data.json() : {}; } catch { try { d = {body: e.data.text()}; } catch {} }
   e.waitUntil((async () => {
-    /* Bila aplikasi sedang terbuka dan terlihat, aplikasi sendiri yang menampilkan notifikasinya */
-    const list = await self.clients.matchAll({type: "window", includeUncontrolled: true});
-    if (list.some(c => c.focused)) return;
+    /* Bila aplikasi sedang terbuka dan terlihat, aplikasi sendiri yang menampilkan notifikasinya.
+       Notifikasi uji selalu ditampilkan. */
+    if (d.tag !== "test") {
+      const list = await self.clients.matchAll({type: "window", includeUncontrolled: true});
+      if (list.some(c => c.visibilityState === "visible" && c.focused)) return;
+    }
     await self.registration.showNotification(d.title || "Orbit", {
       body: d.body || "Pesan baru",
       tag: d.tag || "orbit",
@@ -29,4 +32,9 @@ self.addEventListener("push", e => {
       badge: "icon-192.png"
     });
   })());
+});
+
+/* Bila langganan push dicabut/berganti oleh browser, daftarkan ulang saat aplikasi dibuka berikutnya */
+self.addEventListener("pushsubscriptionchange", e => {
+  e.waitUntil(self.clients.matchAll({includeUncontrolled: true}).then(l => l.forEach(c => c.postMessage({t: "resub"}))));
 });
