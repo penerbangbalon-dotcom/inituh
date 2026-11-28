@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "817135139490",
+    "project_id": "orbit-ccea2",
+    "storage_bucket": "orbit-ccea2.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:817135139490:android:50d1437d6b23d2caf2b5fb",
+        "android_client_info": {
+          "package_name": "id.orbit.obrolan"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCHmA48Nv3ObTweAtKxErCkqlJ-qknT7_8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

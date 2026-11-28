@@ -55,6 +55,47 @@ async function nameOf(id) {
   try { const [p] = await rest("profiles?select=display_name&id=eq." + id); return p?.display_name || "Seseorang"; }
   catch { return "Seseorang"; }
 }
+
+/* ----- Firebase Cloud Messaging (HTTP v1) untuk aplikasi Android native ----- */
+function saJson() {
+  const raw = E.FIREBASE_SERVICE_ACCOUNT || "";
+  if (!raw) return null;
+  try { return JSON.parse(raw); } catch {}
+  /* tertempel dengan baris baru asli di dalam private_key: ambil bagian pentingnya secara manual */
+  try {
+    const g = k => (raw.match(new RegExp('"' + k + '"\\s*:\\s*"([^"]*)"')) || [])[1];
+    const key = g("private_key");
+    return key ? {project_id: g("project_id"), client_email: g("client_email"), private_key: key.replace(/\\n/g, "\n")} : null;
+  } catch { return null; }
+}
+let fcmTok = {v: "", exp: 0};
+const b64 = b => Buffer.from(b).toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+async function fcmToken() {
+  if (fcmTok.v && Date.now() < fcmTok.exp - 60000) return fcmTok.v;
+  const sa = saJson();
+  if (!sa) throw new Error("FIREBASE_SERVICE_ACCOUNT kosong/tidak valid");
+  const now = Math.floor(Date.now() / 1000);
+  const head = b64(JSON.stringify({alg: "RS256", typ: "JWT"}));
+  const body = b64(JSON.stringify({iss: sa.client_email, scope: "https://www.googleapis.com/auth/firebase.messaging", aud: "https://oauth2.googleapis.com/token", iat: now, exp: now + 3600}));
+  const sig = crypto.createSign("RSA-SHA256").update(head + "." + body).sign(sa.private_key);
+  const r = await fetch("https://oauth2.googleapis.com/token", {method: "POST", headers: {"Content-Type": "application/x-www-form-urlencoded"},
+    body: "grant_type=" + encodeURIComponent("urn:ietf:params:oauth:grant-type:jwt-bearer") + "&assertion=" + head + "." + body + "." + b64(sig)});
+  const j = await r.json();
+  if (!r.ok) throw new Error("Token Google gagal: " + (j.error_description || j.error));
+  fcmTok = {v: j.access_token, exp: Date.now() + (j.expires_in || 3600) * 1000};
+  return fcmTok.v;
+}
+/* Pesan "data" berprioritas tinggi: diterima aplikasi walau tertutup; aplikasi yang membuat notifikasi/layar panggilan */
+async function sendFcm(token, p, ttl) {
+  const sa = saJson(), at = await fcmToken();
+  const data = p.cancel ? {type: "cancel", cid: String(p.cid || "")}
+    : {type: p.call ? "call" : "msg", title: String(p.title || "Orbit"), body: String(p.body || ""), tag: String(p.tag || "orbit"), cid: String(p.cid || "")};
+  const r = await fetch("https://fcm.googleapis.com/v1/projects/" + sa.project_id + "/messages:send", {
+    method: "POST", headers: {Authorization: "Bearer " + at, "Content-Type": "application/json"},
+    body: JSON.stringify({message: {token, data, android: {priority: "HIGH", ttl: ttl + "s"}}})});
+  if (!r.ok) { const t = await r.text(); const e = new Error(t.slice(0, 200)); e.statusCode = r.status; e.gone = /UNREGISTERED|NOT_FOUND|INVALID_ARGUMENT/.test(t); throw e; }
+}
+
 function fileLabel(r) {
   const t = r.file_type || "";
   if (t.startsWith("audio/")) return "🎤 Pesan suara";
@@ -73,8 +114,9 @@ async function build(table, op, r) {
   if (table === "call_signals" && op === "INSERT" && r.kind === "invite") {
     if (Date.now() - new Date(r.created_at).getTime() > 40000) return null;
     const d = r.data || {}, name = await nameOf(r.from_user), grup = Array.isArray(d.members) && d.members.length > 2;
-    return {to: r.to_user, p: {title: grup ? "👥 Panggilan grup masuk" : d.video ? "🎥 Panggilan video masuk" : "📞 Panggilan masuk", body: name, tag: "call-" + r.cid, call: true}, ttl: 30};
+    return {to: r.to_user, p: {title: grup ? "👥 Panggilan grup masuk" : d.video ? "🎥 Panggilan video masuk" : "📞 Panggilan masuk", body: name, tag: "call-" + r.cid, cid: r.cid, call: true}, ttl: 30};
   }
+  if (table === "call_signals" && op === "INSERT" && r.kind === "cancel") return {to: r.to_user, p: {cancel: true, cid: r.cid}, ttl: 30, fcmOnly: true};
   if (table === "friendships") {
     if (op === "INSERT" && r.status === "pending") return {to: r.addressee, p: {title: "Undangan pertemanan", body: (await nameOf(r.requester)) + " ingin berteman denganmu", tag: "fr-" + r.requester}, ttl: 86400};
     if (op === "UPDATE" && r.status === "accepted") return {to: r.requester, p: {title: "Undangan diterima", body: (await nameOf(r.addressee)) + " menerima permintaan pertemananmu", tag: "fr-" + r.addressee}, ttl: 86400};
@@ -82,22 +124,36 @@ async function build(table, op, r) {
   return null;
 }
 
-/* Kirim ke semua perangkat milik satu pengguna; urgensi "high" agar tidak ditunda mode hemat daya (Doze) Android */
+/* Kirim ke semua perangkat milik satu pengguna (browser lewat Web Push, Android lewat FCM); urgensi tinggi agar tidak ditunda Doze */
 async function deliver(job) {
-  const subs = await rest("push_subs?select=id,endpoint,p256dh,auth&user_id=eq." + job.to);
   const res = [];
-  await Promise.all(subs.map(async s => {
-    const host = (() => { try { return new URL(s.endpoint).host; } catch { return "?"; } })();
-    try {
-      await webpush.sendNotification({endpoint: s.endpoint, keys: {p256dh: s.p256dh, auth: s.auth}}, JSON.stringify(job.p), {TTL: job.ttl, urgency: "high"});
-      res.push({host, ok: true});
-    } catch (e) {
-      if (e.statusCode === 404 || e.statusCode === 410) await rest("push_subs?id=eq." + s.id, {method: "DELETE"}).catch(() => {});
-      console.warn("push gagal", e.statusCode, String(e.body || e.message).slice(0, 200));
-      res.push({host, ok: false, status: e.statusCode, error: String(e.body || e.message).slice(0, 160)});
-    }
-  }));
-  return {devices: subs.length, sent: res.filter(x => x.ok).length, results: res};
+  if (!job.fcmOnly) {
+    const subs = await rest("push_subs?select=id,endpoint,p256dh,auth&user_id=eq." + job.to);
+    await Promise.all(subs.map(async s => {
+      const host = (() => { try { return new URL(s.endpoint).host; } catch { return "?"; } })();
+      try {
+        await webpush.sendNotification({endpoint: s.endpoint, keys: {p256dh: s.p256dh, auth: s.auth}}, JSON.stringify(job.p), {TTL: job.ttl, urgency: "high"});
+        res.push({host, ok: true});
+      } catch (e) {
+        if (e.statusCode === 404 || e.statusCode === 410) await rest("push_subs?id=eq." + s.id, {method: "DELETE"}).catch(() => {});
+        console.warn("push gagal", e.statusCode, String(e.body || e.message).slice(0, 200));
+        res.push({host, ok: false, status: e.statusCode, error: String(e.body || e.message).slice(0, 160)});
+      }
+    }));
+  }
+  if (saJson()) {
+    let toks = [];
+    try { toks = await rest("fcm_tokens?select=id,token&user_id=eq." + job.to); } catch (e) { console.warn("fcm_tokens", e.message); }
+    await Promise.all(toks.map(async t => {
+      try { await sendFcm(t.token, job.p, job.ttl); res.push({host: "android", ok: true}); }
+      catch (e) {
+        if (e.gone || e.statusCode === 404) await rest("fcm_tokens?id=eq." + t.id, {method: "DELETE"}).catch(() => {});
+        console.warn("fcm gagal", e.statusCode, e.message);
+        res.push({host: "android", ok: false, status: e.statusCode, error: String(e.message).slice(0, 160)});
+      }
+    }));
+  }
+  return {devices: res.length, sent: res.filter(x => x.ok).length, results: res};
 }
 
 module.exports = async (req, res) => {
@@ -114,6 +170,11 @@ module.exports = async (req, res) => {
       };
       try { const s = await rest("push_subs?select=id&limit=1000"); c.jumlah_perangkat_terdaftar = s.length; c.supabase_terhubung = true; }
       catch (e) { c.supabase_terhubung = false; c.supabase_error = String(e.message).slice(0, 120); }
+      c.firebase_service_account = !!saJson();
+      if (c.firebase_service_account) {
+        try { await fcmToken(); c.firebase_oauth_ok = true; } catch (e) { c.firebase_oauth_ok = false; c.firebase_error = String(e.message).slice(0, 160); }
+        try { const t = await rest("fcm_tokens?select=id&limit=1000"); c.jumlah_android_terdaftar = t.length; } catch (e) { c.fcm_tokens_error = String(e.message).slice(0, 120); }
+      }
       return res.status(200).json(c);
     }
     if (req.method !== "POST") return res.status(405).end();

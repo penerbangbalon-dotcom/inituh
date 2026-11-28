@@ -47,8 +47,12 @@ Hemat daya Android: pada HP tertentu (Xiaomi, Oppo, Vivo, Samsung) setel baterai
 ## Pesan suara
 Tombol mikrofon di sebelah kolom pesan (muncul saat kolom kosong): ketuk untuk merekam, ikon tempat sampah untuk batal, panah hijau untuk kirim. Disimpan di bucket `files` (tidak perlu SQL baru). Rekaman Android/Chrome berformat WebM, iPhone M4A; iPhone lama (di bawah iOS 18.4) belum bisa memutar WebM.
 
-## APK Android
-Folder `android/` adalah pembungkus TWA (Chrome) untuk `orbit-obrolan.vercel.app`; notifikasi tetap lewat Web Push.
-1. Unggah SEMUA isi folder ini ke GitHub (termasuk `.github`, `.well-known`, `android`, `vercel.json`), tunggu Vercel selesai deploy.
-2. GitHub > tab **Actions** > **Bangun APK Orbit** > Run workflow. Sekitar 5 menit kemudian APK ada di **Releases > Orbit APK terbaru** (unduh dari HP, izinkan "pasang dari sumber ini").
-3. `.well-known/assetlinks.json` berisi sidik jari kunci tanda tangan `android/orbit.jks`; ini yang membuat aplikasi tampil layar penuh tanpa bilah alamat. Jika kunci diganti, perbarui sidik jarinya.
+## APK Android (native, dengan panggilan layar penuh)
+Folder `android/` adalah aplikasi Android: membuka Orbit di WebView, menerima pesan & panggilan lewat Firebase Cloud Messaging (FCM). Panggilan masuk berdering dan tampil layar penuh walau HP terkunci (Android 14+: izinkan "Layar penuh" bila diminta).
+Yang perlu disiapkan sekali:
+1. Supabase > SQL Editor: jalankan `perbaikan-fcm.sql`.
+2. Vercel > Environment Variables: `FIREBASE_SERVICE_ACCOUNT` = seluruh isi file JSON kunci server dari Firebase (Project settings > Service accounts > Generate new private key). Lalu Redeploy.
+3. Unggah SEMUA isi folder ini ke GitHub (termasuk `.github`, `android`, `vercel.json`).
+4. GitHub > Actions > **Bangun APK Orbit** > Run workflow. Hasil: Releases > "Orbit APK terbaru" (unduh dari HP).
+Cek: buka `/api/push` — `firebase_oauth_ok` harus `true`; setelah APK dipasang dan masuk akun, `jumlah_android_terdaftar` bertambah. Di APK, Pengaturan > "Uji notifikasi" mengirim ke HP itu.
+`android/app/google-services.json` milik proyek Firebase `orbit-ccea2` (paket `id.orbit.obrolan`). Kunci tanda tangan APK: `android/orbit.jks`.

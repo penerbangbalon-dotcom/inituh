@@ -221,6 +221,7 @@ async function onSig(p){
     (PI[p.cid]||[]).forEach(x=>(nc.ib[x.from]=nc.ib[x.from]||[]).push(x.cand));delete PI[p.cid];
     sig(p.from,{t:"ring"},p.cid);
     showCall();if(S.ring)ringStart();
+    try{window.OrbitNative?.clearCall()}catch{}
     try{navigator.serviceWorker?.getRegistration().then(r=>r?.getNotifications({tag:"call-"+p.cid}).then(l=>l.forEach(n=>n.close())))}catch{}
     nc.to=setTimeout(()=>finish(nc,"cancel"),50000);
     if(away())sysNotify(nc.members.length>2?"👥 Panggilan grup masuk":p.video?"🎥 Panggilan video masuk":"📞 Panggilan masuk",nmx(p.from)+(nc.members.length>2?" mengajak panggilan grup":""),"call-"+p.cid);

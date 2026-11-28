@@ -87,7 +87,19 @@ function ringTest(){if(typeof CL!=="undefined"&&CL)return;ringStart();setTimeout
 const b64u=s=>{const r=(s+"=".repeat((4-s.length%4)%4)).replace(/-/g,"+").replace(/_/g,"/"),a=atob(r);return Uint8Array.from(a,c=>c.charCodeAt(0))};
 let PS={ok:false,msg:"Server notifikasi: belum dicek"};
 const sameKey=(sub)=>{try{const k=sub.options?.applicationServerKey;if(!k)return true;const a=new Uint8Array(k),b=b64u(window.ORBIT_VAPID);return a.length===b.length&&a.every((v,i)=>v===b[i])}catch{return true}};
+/* Aplikasi Android (APK Orbit): token FCM diberikan oleh aplikasi lewat window.OrbitNative */
+async function subscribeNative(){
+  try{
+    let t="";
+    for(let i=0;i<8&&!t;i++){t=window.OrbitNative.getToken();if(!t)await new Promise(r=>setTimeout(r,1500))}
+    if(!t){PS={ok:false,msg:"Android belum memberi token notifikasi (cek internet dan Google Play Services)"};return PS}
+    const {error}=await sb.rpc("save_fcm_token",{p_token:t});
+    PS=error?{ok:false,msg:"Gagal menyimpan token: "+error.message+(/save_fcm_token/.test(error.message)?" — jalankan perbaikan-fcm.sql di Supabase.":"")}:{ok:true,msg:"Perangkat Android terdaftar ✓"};
+  }catch(e){PS={ok:false,msg:"Gagal mendaftar: "+(e.message||e)}}
+  return PS;
+}
 async function subscribePush(){
+  if(window.OrbitNative&&me)return subscribeNative();
   try{
     if(!me||!window.ORBIT_VAPID||!("PushManager" in window)||!("serviceWorker" in navigator)||!("Notification" in window)||Notification.permission!=="granted"){PS={ok:false,msg:"Notifikasi belum aktif di perangkat ini"};return PS}
     const reg=await navigator.serviceWorker.ready;
@@ -106,7 +118,7 @@ async function subscribePush(){
 async function pushTest(){
   const set=t=>{const e=$("#ps");if(e)e.textContent=t};
   set("Menguji…");
-  if(!("Notification" in window)||Notification.permission!=="granted")return set("Izinkan notifikasi dulu (tombol Aktifkan).");
+  if(!window.OrbitNative&&(!("Notification" in window)||Notification.permission!=="granted"))return set("Izinkan notifikasi dulu (tombol Aktifkan).");
   const r=await subscribePush();if(!r.ok)return set(r.msg);
   try{
     const {data:{session}}=await sb.auth.getSession();
@@ -123,7 +135,7 @@ document.addEventListener("visibilitychange",()=>{if(!document.hidden&&me)subscr
 /* Ajakan mengaktifkan notifikasi bila belum diizinkan */
 function notifBanner(){
   const b=$("#nbn");if(!b)return;
-  const need="Notification" in window&&Notification.permission!=="granted";
+  const need=!window.OrbitNative&&"Notification" in window&&Notification.permission!=="granted";
   b.hidden=!need;
   if(need)b.innerHTML=Notification.permission==="denied"?`<span class="sp">Notifikasi diblokir. Izinkan lewat ikon gembok/pengaturan situs, lalu muat ulang.</span>`:`<span class="sp">Aktifkan notifikasi agar pesan & panggilan masuk walau Orbit ditutup.</span><button onclick="askPerm()">Aktifkan</button>`;
 }
@@ -205,13 +217,14 @@ function stopPolling(){clearInterval(pollM);pollM=null}
 
 /* ----- Layar pengaturan ----- */
 function permText(){
+  if(window.OrbitNative)return "Aplikasi Android Orbit (diatur di pengaturan Android)";
   if(!("Notification" in window))return "Tidak didukung browser ini";
   return {granted:"Aktif di perangkat ini",denied:"Diblokir di browser",default:"Belum diizinkan"}[Notification.permission];
 }
 function setOpen(v){
   $("#set").hidden=!v;if(!v)return;
   $("#ns").textContent=permText();
-  $("#nbtn").hidden=!("Notification" in window)||Notification.permission==="granted";
+  $("#nbtn").hidden=!!window.OrbitNative||!("Notification" in window)||Notification.permission==="granted";
   $("#s-notif").checked=S.notif;$("#s-snd").checked=S.snd;$("#s-ring").checked=S.ring;
   $("#s-vol").value=Math.round(S.vol*100);$("#s-theme").value=S.theme||"dark";$("#ps").textContent=PS.msg;
   fillDevs(false);

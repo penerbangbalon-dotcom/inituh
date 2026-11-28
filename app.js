@@ -75,6 +75,11 @@ const out=()=>F.filter(x=>x.status==="pending"&&x.requester===me.id);
 
 /* ----- Tampilan ----- */
 function go(v){view=v;draw(true)}
+/* Keluar: lepaskan HP ini dari akun (token Android) agar tidak menerima panggilan/pesan akun lama */
+async function logout(){
+  try{if(window.OrbitNative){const t=OrbitNative.getToken();if(t)await sb.rpc("drop_fcm_token",{p_token:t})}}catch{}
+  sb.auth.signOut();
+}
 const TT={chat:"Obrolan",kontak:"Kontak",teman:"Tambah teman",prof:"Profil"};
 function draw(side=true){
   $("#me").innerHTML=av(me.id,"sm");document.querySelectorAll("#tabs button[data-v]").forEach(b=>b.classList.toggle("on",b.dataset.v===view));
@@ -140,7 +145,7 @@ function vProf(){
   <div class="mu">Kode kamu (bagikan ke teman)</div><div class="code">${prof.code?esc(prof.code):"(belum ada, jalankan perbaikan-profil.sql di Supabase)"}</div><div id="qr"></div><button class="g s" onclick="salin()">Salin kode</button></div>
   <div class="card"><div class="mu" style="margin-bottom:6px">Nama tampilan</div><div class="row"><input id="dn" value="${esc(prof.display_name)}" maxlength="40"><button class="s" onclick="simpanNama()">Simpan</button></div></div>
   <div class="card"><div class="mu" style="margin-bottom:6px">Username (opsional: 4-20 karakter, huruf kecil, angka, _)</div><div class="row"><input id="un" value="${esc(prof.username||"")}" maxlength="20" placeholder="contoh: budi_sd12"><button class="s" onclick="simpanUser()">Simpan</button></div><div class="mu" style="margin-top:6px">Bisa diganti sekali setiap 30 hari.</div></div>
-  <button class="d" style="width:100%" onclick="sb.auth.signOut()">Keluar</button>`;
+  <button class="d" style="width:100%" onclick="logout()">Keluar</button>`;
 }
 
 /* ----- Profil & teman ----- */
