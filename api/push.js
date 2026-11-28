@@ -39,6 +39,13 @@ function init() {
   ready = "ok";
 }
 
+/* Jenis kunci yang terpasang di SUPABASE_SERVICE_KEY: harus "secret" / service_role, bukan publishable / anon */
+function keyKind() {
+  if (K.startsWith("sb_secret_")) return "secret (benar)";
+  if (K.startsWith("sb_publishable_")) return "publishable (SALAH: pakai kunci secret / service_role)";
+  try { const r = JSON.parse(Buffer.from(K.split(".")[1], "base64").toString()).role; return r === "service_role" ? "service_role (benar)" : r + " (SALAH: pakai service_role)"; }
+  catch { return "tidak dikenali"; }
+}
 async function rest(path, opt = {}) {
   const r = await fetch(E.SUPABASE_URL + "/rest/v1/" + path, {...opt, headers: {...H, ...(opt.headers || {})}});
   if (!r.ok) throw new Error("Supabase " + r.status + " " + (await r.text()).slice(0, 200));
@@ -102,7 +109,8 @@ module.exports = async (req, res) => {
         subject_dipakai: fixSubject(E.VAPID_SUBJECT).replace(/(?<=mailto:.).*(?=@)/, "***"),
         subject_valid_asli: /^(mailto:[^\s@]+@[^\s@]+\.[^\s@]+|https:\/\/\S+)$/.test(String(E.VAPID_SUBJECT || "").trim()),
         pasangan_kunci_cocok: !!E.VAPID_PRIVATE && pubFromPriv() === (E.VAPID_PUBLIC || "").trim(),
-        SUPABASE_URL: !!E.SUPABASE_URL, SUPABASE_SERVICE_KEY: !!K, PUSH_SECRET: !!E.PUSH_SECRET
+        SUPABASE_URL: !!E.SUPABASE_URL, SUPABASE_SERVICE_KEY: !!K, PUSH_SECRET: !!E.PUSH_SECRET,
+        jenis_kunci_supabase: keyKind()
       };
       try { const s = await rest("push_subs?select=id&limit=1000"); c.jumlah_perangkat_terdaftar = s.length; c.supabase_terhubung = true; }
       catch (e) { c.supabase_terhubung = false; c.supabase_error = String(e.message).slice(0, 120); }

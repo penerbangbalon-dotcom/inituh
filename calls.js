@@ -31,6 +31,8 @@ const PEND=["calling","ringing"];
 /* ----- Penghubung ----- */
 function handleRow(r){
   if(!r||!r.id||seenSig.has(r.id))return;seenSig.add(r.id);
+  /* undangan yang sudah lewat masa dering (penelepon menyerah di 45 dtk) tidak perlu berdering lagi */
+  if(r.kind==="invite"&&Date.now()-new Date(r.created_at).getTime()>50000)return;
   onSig({t:r.kind,from:r.from_user,cid:r.cid,...(r.data||{})});
 }
 function initCalls(){
@@ -38,7 +40,11 @@ function initCalls(){
   inbox=sb.channel("cs-"+me.id).on("postgres_changes",{event:"INSERT",schema:"public",table:"call_signals",filter:"to_user=eq."+me.id},p=>handleRow(p.new)).subscribe();
   /* Tandai sinyal lama sebagai sudah dilihat, lalu cek berkala (cadangan bila Realtime tidak sampai) */
   sb.from("call_signals").select("*").eq("to_user",me.id).order("created_at",{ascending:true}).limit(200).then(({data})=>{
-    (data||[]).forEach(r=>seenSig.add(r.id));
+    /* Sinyal lama ditandai sudah dilihat; sinyal yang baru masuk (mis. undangan panggilan yang membuat
+       aplikasi dibuka dari notifikasi) tetap diproses berurutan supaya layar panggilan masuk muncul. */
+    const rows=data||[],fresh=Date.now()-60e3;
+    rows.filter(r=>new Date(r.created_at).getTime()<fresh).forEach(r=>seenSig.add(r.id));
+    rows.filter(r=>new Date(r.created_at).getTime()>=fresh).forEach(handleRow);
     schedPoll();
   });
   loadIce();
@@ -51,6 +57,8 @@ async function pollSig(){
   const {data}=await sb.from("call_signals").select("*").eq("to_user",me.id).order("created_at",{ascending:false}).limit(60);
   (data||[]).slice().reverse().forEach(handleRow);
 }
+document.addEventListener("visibilitychange",()=>{if(!document.hidden&&me)pollSig().catch(()=>{})});
+addEventListener("focus",()=>{if(me)pollSig().catch(()=>{})});
 function resetCall(){
   if(CL)finish(CL,"error");
   clearTimeout(pollS);pollS=null;
@@ -202,6 +210,7 @@ async function onSig(p){
   if(!me||!p||p.from===me.id)return;
   const c=CL;
   if(p.t==="invite"){
+    if(!friends().includes(p.from))await refresh();
     if(!friends().includes(p.from)||!Array.isArray(p.members)||!p.members.includes(me.id)||p.members.length>MAXP)return;
     if(c)return c.cid===p.cid?undefined:sig(p.from,{t:"busy"},p.cid);
     const names=p.names&&typeof p.names==="object"?p.names:{};
@@ -212,6 +221,7 @@ async function onSig(p){
     (PI[p.cid]||[]).forEach(x=>(nc.ib[x.from]=nc.ib[x.from]||[]).push(x.cand));delete PI[p.cid];
     sig(p.from,{t:"ring"},p.cid);
     showCall();if(S.ring)ringStart();
+    try{navigator.serviceWorker?.getRegistration().then(r=>r?.getNotifications({tag:"call-"+p.cid}).then(l=>l.forEach(n=>n.close())))}catch{}
     nc.to=setTimeout(()=>finish(nc,"cancel"),50000);
     if(away())sysNotify(nc.members.length>2?"👥 Panggilan grup masuk":p.video?"🎥 Panggilan video masuk":"📞 Panggilan masuk",nmx(p.from)+(nc.members.length>2?" mengajak panggilan grup":""),"call-"+p.cid);
     return;

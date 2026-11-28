@@ -63,3 +63,8 @@ create trigger push_calls after insert on public.call_signals
 drop trigger if exists push_friends on public.friendships;
 create trigger push_friends after insert or update on public.friendships
   for each row execute function public.notify_push();
+
+-- Izin untuk server push (tanpa ini Vercel menerima galat 403 saat membaca push_subs)
+grant usage on schema public to service_role;
+grant select, insert, update, delete on public.push_subs to service_role;
+grant select on public.profiles to service_role;

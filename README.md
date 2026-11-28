@@ -40,7 +40,8 @@ Di iPhone, Orbit harus dipasang dulu ke Layar Utama (Bagikan > Tambah ke Layar U
 ## Cek & uji notifikasi (jika belum muncul saat aplikasi ditutup)
 1. Buka `https://ALAMAT-VERCEL-ANDA/api/push` di browser: semua nilai harus `true` (terutama `pasangan_kunci_cocok` dan `supabase_terhubung`). `VAPID_SUBJECT` yang salah ketik (mis. `mailtoxxx@gmail.com`) kini diperbaiki otomatis.
 2. Di HP yang akan diuji: Pengaturan > Aktifkan > **Uji notifikasi**. Hasilnya menyebut berapa perangkat yang menerima, atau kode galat dari layanan push.
-3. Bila "tidak menemukan perangkat terdaftar": jalankan `perbaikan-push.sql`, lalu `diagnosa-push.sql` (blok 1-3) di Supabase.
+3. Bila `supabase_terhubung` bernilai `false` dengan galat 403/42501: jalankan `perbaikan-push-izin.sql` di Supabase, dan pastikan `jenis_kunci_supabase` bertuliskan "benar".
+4. Bila "tidak menemukan perangkat terdaftar": jalankan `perbaikan-push.sql`, lalu `diagnosa-push.sql` (blok 1-3) di Supabase.
 Hemat daya Android: pada HP tertentu (Xiaomi, Oppo, Vivo, Samsung) setel baterai Chrome/Orbit ke "Tanpa batasan".
 
 ## Pesan suara
