@@ -29,7 +29,7 @@ final class Notifier {
         Uri ring = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE);
         AudioAttributes aa = new AudioAttributes.Builder()
                 .setUsage(AudioAttributes.USAGE_NOTIFICATION_RINGTONE)
-                .setContentType(AudioAttributes.CONTENT_TYPE_SONIC).build();
+                .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION).build();
         NotificationChannel call = new NotificationChannel(CH_CALL, "Panggilan masuk", NotificationManager.IMPORTANCE_HIGH);
         call.setSound(ring, aa);
         call.enableVibration(true);
